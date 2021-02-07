@@ -10,11 +10,55 @@ protocol URLModel {
   var password: String { get }
   var pathname: String { get }
   var search: String { get }
-  var fragment: String { get }
+  var hash: String { get }
 }
 
+var allURLModelKeypaths: [KeyPath<URLModel, String>] {
+  return [
+    \.href, \.scheme, \.hostname, \.port, \.username, \.password, \.pathname, \.search, \.hash
+  ]
+}
+
+extension URLModel {
+  
+  func unequalKeys<Other: URLModel>(comparedTo other: Other) -> [KeyPath<URLModel, String>] {
+    var results = [KeyPath<URLModel, String>]()
+    for modelKeypath in allURLModelKeypaths {
+      if self[keyPath: modelKeypath] != other[keyPath: modelKeypath] {
+        results.append(modelKeypath)
+      }
+    }
+    return results
+  }
+}
+
+
+// MARK: - Conformances.
+
+
+// We've got lots of URL-looking types floating around here, so let's make sure we're clear what each of them are:
+//
+// - WebURL.JSModel: The thing we want to test. The JS-like interface to a WebURL.
+// - URLValues:      From WebURLTestSupport. A complete spec of every testable URL value, usually read from a test file.
+//
+// - JSDataURLModel:     The data we got from the reference implementation via the JSDomRunner.
+// - FoundationURLModel: A just-for-fun attempt at exposing a JS-like interface to Foundation's URL type.
+
 import WebURL
-extension WebURL.JSModel: URLModel {}
+
+extension WebURL.JSModel: URLModel {
+  var hash: String {
+    fragment
+  }
+}
+
+import WebURLTestSupport
+
+extension URLValues: URLModel {
+  var scheme: String {
+    self.protocol
+  }
+}
 
 struct JSDataURLModel: URLModel {
   var data: [String: String]
@@ -27,7 +71,7 @@ struct JSDataURLModel: URLModel {
   var password: String { data["password"] ?? "" }
   var pathname: String { data["pathname"] ?? "" }
   var search: String { data["search"] ?? "" }
-  var fragment: String { data["fragment"] ?? "" }
+  var hash: String { data["hash"] ?? "" }
 }
 
 // Note: Foundation doesn't match the WHATWG's Javascript model by any stretch.
@@ -55,28 +99,10 @@ struct FoundationURLModel: URLModel {
     // Add a leading "?" because NSURL doesn't include it.
     url.query.map { ($0.isEmpty ? "" : "?") + $0 } ?? ""
   }
-  var fragment: String {
+  var hash: String {
     // Add a leading "#" because NSURL doesn't include it.
     url.fragment.map { ($0.isEmpty ? "" : "#") + $0 } ?? ""
   }
 }
 
 
-var allURLModelKeypaths: [KeyPath<URLModel, String>] {
-  return [
-    \.href, \.scheme, \.hostname, \.port, \.username, \.password, \.pathname, \.search, \.fragment
-  ]
-}
-
-extension URLModel {
-  
-  func unequalKeys<Other: URLModel>(comparedTo other: Other) -> [KeyPath<URLModel, String>] {
-    var results = [KeyPath<URLModel, String>]()
-    for modelKeypath in allURLModelKeypaths {
-      if self[keyPath: modelKeypath] != other[keyPath: modelKeypath] {
-        results.append(modelKeypath)
-      }
-    }
-    return results
-  }
-}

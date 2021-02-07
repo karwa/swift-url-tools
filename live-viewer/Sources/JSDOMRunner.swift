@@ -7,29 +7,44 @@ import WebKit
 /// An object which calls the JSDOM reference URL implementation.
 ///
 /// It uses an offscreen WKWebView, which isn't really ideal since it isn't available on Linux.
+/// Must only be called on the main queue.
 ///
 struct JSDOMRunner {
   private let webview = WKWebView(frame: .zero, configuration: .init())
   
-  mutating func loadSiteIfNeeded() { 
-    if webview.url == nil {
-      webview.loadFileURL(
-        Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true).appendingPathComponent("index.html"),
-        allowingReadAccessTo: Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true)
-      )
-    }
+  init() {
+    webview.loadFileURL(
+      Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true).appendingPathComponent("index.html"),
+      allowingReadAccessTo: Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true)
+    )
   }
-  
+
+  /// Must only be called on the main queue. The given completion handler is also invoked on the main queue.
+  ///
   func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(JSDataURLModel), Error>)->Void) {
     
     enum JSDomRunnerError: Error {
       case deserialisedToUnexpectedDataType
     }
     
+    // Bit of a cheap hack: we need to make sure the webview had loaded before we proceed.
+    if webview.isLoading {
+      DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+        self(input: input, base: base, completionHandler: completionHandler)
+      }
+      return
+    }
+    
+    // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
+    // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
+    // which decodeURIComponent will use to restore the original content.
+    let escapedInput = Data(input.urlEncoded.utf8).base64EncodedString()
+    let escapedBase = Data(base.urlEncoded.utf8).base64EncodedString()
+    
     let js = #"""
-    var url = new whatwgURL.URL(String.raw` \#(input) `, String.raw` \#(base) `);
+    var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)')), decodeURIComponent(window.atob('\#(escapedBase)')));
     var entries = new Map();
-    [ "href", "protocol", "username", "password", "hostname", "pathname", "search", "fragment" ].forEach(function(property){
+    [ "href", "protocol", "username", "password", "host", "hostname", "origin", "port", "pathname", "search", "hash" ].forEach(function(property){
       entries.set(property, url[property]);
     });
     JSON.stringify(Object.fromEntries(entries))
@@ -64,24 +79,21 @@ struct JSDOMRunner {
   var context = JSContext()!
   var didLoad = false
   
-  mutating func loadSiteIfNeeded() {
-    if didLoad == false {
-      let jsURL = Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true).appendingPathComponent("whatwg-url.js")
-      guard var jsContents = try? String(contentsOf: jsURL) else {
-        print("Failed to read whatwg-url.js")
-        return
-      }
-      // Taken from https://github.com/codesandbox/codesandbox-client/pull/4935/files
-      // Seems to help? Maybe? 🤷‍♂️
-      jsContents = jsContents.replacingOccurrences(of:
-          #"Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get"#,
-          with: #"false ? Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get : null;"#)
-      
-      let result = context.evaluateScript(jsContents)!
-      if let exception = context.exception {
-        print("context failed to load: \(exception)")
-      }
-      didLoad = true
+  init() {
+    let jsURL = Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true).appendingPathComponent("whatwg-url.js")
+    guard var jsContents = try? String(contentsOf: jsURL) else {
+      print("Failed to read whatwg-url.js")
+      return
+    }
+    // Taken from https://github.com/codesandbox/codesandbox-client/pull/4935/files
+    // Seems to help? Maybe? 🤷‍♂️
+    jsContents = jsContents.replacingOccurrences(of:
+        #"Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get"#,
+        with: #"false ? Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get : null;"#)
+    
+    let result = context.evaluateScript(jsContents)!
+    if let exception = context.exception {
+      print("context failed to load: \(exception)")
     }
   }
   
@@ -92,11 +104,16 @@ struct JSDOMRunner {
       case deserialisedToUnexpectedDataType
     }
     
-    // TODO: We need to escape quotes (at least) from input and base.
+    // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
+    // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
+    // which decodeURIComponent will use to restore the original content.
+    let escapedInput = Data(input.urlEncoded.utf8).base64EncodedString()
+    let escapedBase = Data(base.urlEncoded.utf8).base64EncodedString()
+    
     let js = #"""
-    var url = new whatwgURL.URL("\#(input)", "\#(base)");
+    var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)')), decodeURIComponent(window.atob('\#(escapedBase)')));
     var entries = new Map();
-    [ "href", "protocol", "username", "password", "hostname", "pathname", "search", "fragment" ].forEach(function(property){
+    [ "href", "protocol", "username", "password", "host", "hostname", "origin", "port", "pathname", "search", "hash" ].forEach(function(property){
       entries.set(property, url[property]);
     });
     JSON.stringify(Object.fromEntries(entries))
@@ -121,5 +138,66 @@ struct JSDOMRunner {
   }
 }
 
-
 #endif
+
+
+// MARK: - Batch Processing.
+
+
+extension JSDOMRunner {
+  
+  /// Executes a series of tests on the JSDOM URL reference implementation, one at a time, generating a result from each, and delivers the
+  /// collected results asynchronously as an Array.
+  ///
+  final class BatchRunner<TestInput, TestResult> {
+
+    static func run(
+      each testInputs: [TestInput],
+      extractValues: @escaping (TestInput) -> (input: String, base: String)?,
+      generateResult: @escaping (Int, TestInput, JSDataURLModel?)->TestResult?,
+      completion: @escaping ([TestResult])->Void
+    ) -> AnyObject {
+      let gen = BatchRunner(extractValues: extractValues, generateResult: generateResult, completion: completion)
+      gen.runNextTest(testInputs[...])
+      return gen
+    }
+    
+    var results: [TestResult]
+    var jsRunner: JSDOMRunner
+
+    let extractValues: (TestInput) -> (input: String, base: String)?
+    let generateResult: (Int, TestInput, JSDataURLModel?) -> TestResult?
+    let completion: ([TestResult]) -> Void
+    
+    private init(
+      extractValues: @escaping (TestInput) -> (input: String, base: String)?,
+      generateResult: @escaping (Int, TestInput, JSDataURLModel?) -> TestResult?,
+      completion: @escaping ([TestResult]) -> Void
+    ) {
+      self.results = []
+      self.jsRunner = JSDOMRunner()
+      self.extractValues = extractValues
+      self.generateResult = generateResult
+      self.completion = completion
+    }
+    
+    private func runNextTest(_ remaining: ArraySlice<TestInput>) {
+      var remaining = remaining
+      let idx = remaining.startIndex
+      guard let testcase = remaining.popFirst() else {
+        completion(results) // Finished.
+        return
+      }
+      guard let inputValues = extractValues(testcase) else {
+        return self.runNextTest(remaining)
+      }
+      jsRunner(input: inputValues.input, base: inputValues.base) { [weak self] referenceResult in
+        guard let self = self else { return }
+        if let unexpectedResult = self.generateResult(idx, testcase, try? referenceResult.get()) {
+          self.results.append(unexpectedResult)
+        }
+        return self.runNextTest(remaining)
+      }
+    }
+  }
+}

@@ -12,20 +12,20 @@ struct URLForm<Model: URLModel>: View {
     GroupBox(label: Text(label)) {
       VStack {
         ForEach([
-          ("Href", \URLModel.href),
-          ("Scheme", \URLModel.scheme),
-          ("Hostname", \URLModel.hostname),
-          ("Port", \URLModel.port),
-          ("Username", \URLModel.username),
-          ("Password", \URLModel.password),
-          ("Path", \URLModel.pathname),
-          ("Search", \URLModel.search),
-          ("Fragment", \URLModel.fragment),
+          ("href", \URLModel.href),
+          ("protocol", \URLModel.scheme),
+          ("hostname", \URLModel.hostname),
+          ("port", \URLModel.port),
+          ("username", \URLModel.username),
+          ("password", \URLModel.password),
+          ("pathname", \URLModel.pathname),
+          ("search", \URLModel.search),
+          ("hash", \URLModel.hash),
         ], id: \.1) { (item: (String, KeyPath<URLModel, String>)) in
           HStack {
             Text(item.0)
               .bold()
-              .frame(minWidth: 100, maxWidth: 100, alignment: .leading)
+              .frame(minWidth: 100, maxWidth: 100, alignment: .trailing)
             let description = self.model.map { $0[keyPath: item.1] } ?? "<URL is nil>"
             Text(description)
               .frame(alignment: .leading)

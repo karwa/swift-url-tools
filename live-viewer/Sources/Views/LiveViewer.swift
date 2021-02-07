@@ -2,39 +2,7 @@ import SwiftUI
 import Combine
 import WebURL
 
-struct NewContentView: View {
-  
-  enum Tabs {
-    case liveViewer
-    case batchProcessor
-  }
-  @State var selectedTab = Tabs.liveViewer
-  
-  var body: some View {
-    VStack {
-      // Header.
-      HStack {
-        Spacer()
-        Picker("", selection: $selectedTab) {
-          Text("Live").tag(Tabs.liveViewer)
-          Text("Batch").tag(Tabs.batchProcessor)
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        Spacer()
-      }.padding(.top, 8).padding(.horizontal, 100)
-      Divider()
-      
-      // Content.
-      switch selectedTab {
-      case .liveViewer: LiveViewer()
-      case .batchProcessor: Text("Unfinished")
-      }
-    }
-  }
-}
-
-
-class ContentViewObjects: ObservableObject {
+class LiveViewerObjects: ObservableObject {
   @Published var urlString  = ""
   @Published var baseString = "about:blank"
   
@@ -50,7 +18,7 @@ class ContentViewObjects: ObservableObject {
 }
 
 struct LiveViewer: View {
-  @ObservedObject private var objects = ContentViewObjects()
+  @ObservedObject private var objects = LiveViewerObjects()
   
   var body: some View {
     VStack {
