@@ -1,38 +1,37 @@
 import SwiftUI
+import WebURLTestSupport
 
-/// A form which displays information about type conforming to `URLModel`.
-/// It also has a label, and the ability to highlight particular properties as being "bad". Quite thrilling.
+/// A view which displays the contents of a `URLValues` object.
+/// It also has a label, and the ability to highlight particular properties as being "bad".
+/// Quite thrilling.
 ///
-struct URLForm<Model: URLModel>: View {
+struct URLForm: View {
   var label: String = ""
-  @Binding var model: Model?
-  @Binding var badKeys: [KeyPath<URLModel, String>]
+  @Binding var model: URLValues?
+  @Binding var badKeys: [KeyPath<URLValues, String>]
  
   var body: some View {
     GroupBox(label: Text(label)) {
-      VStack {
-        ForEach([
-          ("href", \URLModel.href),
-          ("protocol", \URLModel.scheme),
-          ("hostname", \URLModel.hostname),
-          ("port", \URLModel.port),
-          ("username", \URLModel.username),
-          ("password", \URLModel.password),
-          ("pathname", \URLModel.pathname),
-          ("search", \URLModel.search),
-          ("hash", \URLModel.hash),
-        ], id: \.1) { (item: (String, KeyPath<URLModel, String>)) in
+      VStack(alignment: .leading) {
+        ForEach(URLValues.allTestableURLProperties, id: \.keyPath) { property in
           HStack {
-            Text(item.0)
+            Text(property.name)
               .bold()
               .frame(minWidth: 100, maxWidth: 100, alignment: .trailing)
-            let description = self.model.map { $0[keyPath: item.1] } ?? "<URL is nil>"
+            let description = self.model.map { $0[keyPath: property.keyPath] } ?? "<URL is nil>"
             Text(description)
               .frame(alignment: .leading)
             Spacer()
-          }.foregroundColor(self.badKeys.contains(item.1) ? .red : nil)
+          }.foregroundColor(self.badKeys.contains(property.keyPath) ? .red : nil)
         }
       }
     }
+  }
+}
+
+extension Binding {
+  
+  init(readOnly value: Value) {
+    self.init(get: { value }, set: { _ in })
   }
 }

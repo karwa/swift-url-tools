@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		CB34A53025C2350A006ABAD2 /* live-viewer in Resources */ = {isa = PBXBuildFile; fileRef = CB34A52F25C2350A006ABAD2 /* live-viewer */; };
 		CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53225C2D25A006ABAD2 /* URLForm.swift */; };
-		CB34A53625C2D2BD006ABAD2 /* URLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53525C2D2BD006ABAD2 /* URLModel.swift */; };
+		CB34A53625C2D2BD006ABAD2 /* FoundationURLValues.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */; };
 		CB34A53925C2E1D7006ABAD2 /* JSDOMRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */; };
 		CB778F5624954F7E00D9103E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB778F5524954F7E00D9103E /* AppDelegate.swift */; };
 		CB778F5824954F7E00D9103E /* LiveViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB778F5724954F7E00D9103E /* LiveViewer.swift */; };
@@ -24,7 +24,7 @@
 /* Begin PBXFileReference section */
 		CB34A52F25C2350A006ABAD2 /* live-viewer */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "live-viewer"; sourceTree = "<group>"; };
 		CB34A53225C2D25A006ABAD2 /* URLForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLForm.swift; sourceTree = "<group>"; };
-		CB34A53525C2D2BD006ABAD2 /* URLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLModel.swift; sourceTree = "<group>"; };
+		CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationURLValues.swift; sourceTree = "<group>"; };
 		CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSDOMRunner.swift; sourceTree = "<group>"; };
 		CB778F5224954F7E00D9103E /* live-url-viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "live-url-viewer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB778F5524954F7E00D9103E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -92,7 +92,7 @@
 				CB778F5524954F7E00D9103E /* AppDelegate.swift */,
 				CB946A8925CFAEE500B63451 /* Views */,
 				CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */,
-				CB34A53525C2D2BD006ABAD2 /* URLModel.swift */,
+				CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */,
 			);
 			name = Source;
 			path = Sources;
@@ -192,7 +192,7 @@
 				CB778F5624954F7E00D9103E /* AppDelegate.swift in Sources */,
 				CB34A53925C2E1D7006ABAD2 /* JSDOMRunner.swift in Sources */,
 				CB9C387A25CD03F900E69BA1 /* BatchRunner.swift in Sources */,
-				CB34A53625C2D2BD006ABAD2 /* URLModel.swift in Sources */,
+				CB34A53625C2D2BD006ABAD2 /* FoundationURLValues.swift in Sources */,
 				CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

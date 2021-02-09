@@ -1,5 +1,19 @@
 import Foundation
 
+import WebURLTestSupport
+
+extension URLValues {
+  
+  fileprivate init(_ dict: [String: String]) {
+    self.init(
+      href: dict["href", default: ""], origin: dict["origin"], protocol: dict["protocol", default: ""],
+      username: dict["username", default: ""], password: dict["password", default: ""],
+      host: dict["host", default: ""], hostname: dict["hostname", default: ""], port: dict["port", default: ""],
+      pathname: dict["pathname", default: ""], search: dict["search", default: ""], hash: dict["hash", default: ""]
+    )
+  }
+}
+
 #if true // set to 'false' to try using JavascriptCore rather than WKWebView.
 
 import WebKit
@@ -21,7 +35,7 @@ struct JSDOMRunner {
 
   /// Must only be called on the main queue. The given completion handler is also invoked on the main queue.
   ///
-  func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(JSDataURLModel), Error>)->Void) {
+  func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(URLValues), Error>)->Void) {
     
     enum JSDomRunnerError: Error {
       case deserialisedToUnexpectedDataType
@@ -55,11 +69,14 @@ struct JSDOMRunner {
         return
       }
       do {
-        guard let resultData = try JSONSerialization.jsonObject(with: resultString.data(using: .utf8)!, options: []) as? [String: String] else {
+        guard let resultData = try JSONSerialization.jsonObject(
+                with: resultString.data(using: .utf8)!, options: []
+        ) as? [String: String] else {
           completionHandler(.failure(JSDomRunnerError.deserialisedToUnexpectedDataType))
           return
         }
-        completionHandler(.success(JSDataURLModel(data: resultData)))
+        
+        completionHandler(.success(URLValues(resultData)))
       } catch {
         completionHandler(.failure(error))
       }
@@ -97,7 +114,7 @@ struct JSDOMRunner {
     }
   }
   
-  func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(JSDataURLModel), Error>)->Void) {
+  func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(URLValues), Error>)->Void) {
     
     enum JSDomRunnerError: Error {
       case contextException(JSValue)
@@ -125,7 +142,7 @@ struct JSDOMRunner {
           completionHandler(.failure(JSDomRunnerError.deserialisedToUnexpectedDataType))
           return
         }
-        completionHandler(.success(JSDataURLModel(data: resultData)))
+        completionHandler(.success(URLValues(resultData)))
       } catch {
         completionHandler(.failure(error))
       }
@@ -154,7 +171,7 @@ extension JSDOMRunner {
     static func run(
       each testInputs: [TestInput],
       extractValues: @escaping (TestInput) -> (input: String, base: String)?,
-      generateResult: @escaping (Int, TestInput, JSDataURLModel?)->TestResult?,
+      generateResult: @escaping (Int, TestInput, URLValues?)->TestResult?,
       completion: @escaping ([TestResult])->Void
     ) -> AnyObject {
       let gen = BatchRunner(extractValues: extractValues, generateResult: generateResult, completion: completion)
@@ -166,12 +183,12 @@ extension JSDOMRunner {
     var jsRunner: JSDOMRunner
 
     let extractValues: (TestInput) -> (input: String, base: String)?
-    let generateResult: (Int, TestInput, JSDataURLModel?) -> TestResult?
+    let generateResult: (Int, TestInput, URLValues?) -> TestResult?
     let completion: ([TestResult]) -> Void
-    
+
     private init(
       extractValues: @escaping (TestInput) -> (input: String, base: String)?,
-      generateResult: @escaping (Int, TestInput, JSDataURLModel?) -> TestResult?,
+      generateResult: @escaping (Int, TestInput, URLValues?) -> TestResult?,
       completion: @escaping ([TestResult]) -> Void
     ) {
       self.results = []

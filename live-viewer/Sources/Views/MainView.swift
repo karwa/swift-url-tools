@@ -14,20 +14,22 @@ struct MainView: View {
   var body: some View {
     VStack {
       // Header.
-      HStack {
-        Spacer()
-        Picker("", selection: $selectedTab) {
-          Text("Live").tag(Tabs.liveViewer)
-          Text("Batch").tag(Tabs.batchProcessor)
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        Spacer()
-      }.padding(.top, 8).padding(.horizontal, 100)
-      Divider()
+      VStack {
+        HStack {
+          Spacer()
+          Picker("", selection: $selectedTab) {
+            Text("Live").tag(Tabs.liveViewer)
+            Text("Batch").tag(Tabs.batchProcessor)
+          }
+          .pickerStyle(SegmentedPickerStyle())
+          Spacer()
+        }.padding(.top, 8).padding(.horizontal, 100)
+        Divider()
+      }.frame(height: 42)
       // Content.
       switch selectedTab {
-      case .liveViewer: liveView
-      case .batchProcessor: batchRunner
+      case .liveViewer: liveView.padding(16)
+      case .batchProcessor: batchRunner.padding(16)
       }
     }
   }
