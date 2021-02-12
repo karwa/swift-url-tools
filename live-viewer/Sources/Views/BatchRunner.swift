@@ -70,7 +70,7 @@ struct BatchRunner: View {
           Text("Running...").foregroundColor(.secondary)
         case .finished(let mismatches):
           if mismatches.isEmpty {
-            Text("✅ No mismatches found").foregroundColor(.green)
+            Text("✅ No mismatches found").bold().foregroundColor(.green)
           } else {
             MismatchInspector(
               mismatches: mismatches,
@@ -181,9 +181,7 @@ struct MismatchInspector: View {
             }
             Spacer()
             Divider()
-            Text(String(entry.testNumber))
-              .bold().foregroundColor(.black).padding(2)
-              .background(RoundedRectangle(cornerRadius: 5).foregroundColor(.yellow))
+            Badge(text: String(entry.testNumber)).badgeColor(.yellow).badgeTextColor(.black)
           }
           
         }.frame(width: 200)
@@ -195,6 +193,7 @@ struct MismatchInspector: View {
       VStack {
         if let selection = selectedItem.wrappedValue {
           VStack(alignment: .leading, spacing: 10) {
+            
             VStack(alignment: .leading) {
               HStack() {
                 Text("Input").bold()
@@ -205,6 +204,9 @@ struct MismatchInspector: View {
                 TextField("", text: Binding(readOnly: selection.testcase.base))
               }
             }
+            
+            SubtestFailureBadges(results: Binding(readOnly: selection))
+             
             URLForm(
               label: "Actual",
               model: Binding(readOnly: selection.propertyValues),
@@ -226,6 +228,37 @@ struct MismatchInspector: View {
           Spacer()
         }
       }
+    }
+  }
+}
+
+/// A horizontal, scrollable list of subtest failures from a URL constructor test result.
+///
+struct SubtestFailureBadges: View {
+  @Binding var results: URLConstructorTest.Result
+  
+  var body: some View {
+    ScrollView(.horizontal) {
+      HStack {
+        if results.failures.contains(.baseURLFailedToParse) {
+          Badge(text: "base URL failed to parse")
+        }
+        if results.failures.contains(.inputDidNotFailWhenUsedAsBaseURL) {
+          Badge(text: "input didn't fail as baseURL")
+        }
+        if results.failures.contains(.unexpectedFailureToParse) {
+          Badge(text: "Unexpected failure")
+        }
+        if results.failures.contains(.unexpectedSuccessfulParse) {
+          Badge(text: "Unexpected success")
+        }
+        if results.failures.contains(.propertyMismatch) {
+          Badge(text: "Property mismatch")
+        }
+        if results.failures.contains(.notIdempotent) {
+          Badge(text: "Not idempotent")
+        }
+      }.badgeColor(.red).badgeTextColor(.black)
     }
   }
 }
