@@ -35,6 +35,11 @@ struct LiveViewer: View {
         .padding(8)
         .frame(height: 50, alignment: .center)
         .contextMenu {
+          Button("Copy to clipboard") {
+            let pasteboard = NSPasteboard.general
+            pasteboard.declareTypes([.string], owner: nil)
+            pasteboard.setString(self.generateClipboardString(), forType: .string)
+          }
           Button("Show Foundation result") { self.objects.parseWithFoundation.toggle() }
           Button("Re-parse WebURL result with Foundation") { self.objects.reparseWithFoundation.toggle() }
         }
@@ -93,5 +98,19 @@ struct LiveViewer: View {
           parseWithFoundation ? URLValues.diff(self.objects.reference, self.objects.foundationResult) : []
       }
     }
+  }
+  
+  func generateClipboardString() -> String {
+  	return
+      """
+      inputs: {
+         input: \(objects.urlString)
+         base:  \(objects.baseString)
+      }
+
+      WebURL result: \(objects.weburl?.description ?? "<nil>")
+
+      Reference result: \(objects.reference?.description ?? "<nil>")
+      """
   }
 }
