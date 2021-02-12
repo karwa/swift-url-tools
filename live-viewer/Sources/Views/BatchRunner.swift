@@ -66,10 +66,10 @@ struct BatchRunner: View {
           Button("Test with WebURL") { runTestsWithWebURL() }
           Button("Verify using JSDOM") { checkWithReference() }
         }.disabled(objects.sourceFile == nil)
-        Text("""
-          - 'Test with WebURL' runs a full WPT URL constructor test.
-          - 'Verify using JSDOM' parses input against base and checks if the values match what was expected (or that it fails as expected). It is not a full WPT constructor test.
-          """).foregroundColor(.secondary)
+        VStack(alignment: .leading) {
+          Text("- 'Test with WebURL' runs a full WPT URL constructor test.")
+          Text("- 'Verify using JSDOM' parses the input and base strings and checks the property values. It is not a full constructor test.")
+        }.foregroundColor(.secondary)
       }
       Divider()
       // Results.
