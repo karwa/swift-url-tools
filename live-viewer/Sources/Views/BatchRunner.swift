@@ -4,7 +4,11 @@ import WebURL
 import WebURLTestSupport
 
 class BatchRunnerObjects: ObservableObject {
-  @Published var sourceFile: URL? = .none
+  static let kBatch_LastFile = "batch_lastfile"
+  
+  @Published var sourceFile: URL? = .none {
+    didSet { UserDefaults.standard.set(try? sourceFile?.bookmarkData(), forKey: Self.kBatch_LastFile) }
+  }
   
   @Published var resultsState: ResultsState? = .none {
     didSet { selectedItem = nil }
@@ -19,6 +23,15 @@ class BatchRunnerObjects: ObservableObject {
     case parseError(Error)
     case running(AnyObject?)
     case finished([URLConstructorTest.Result])
+  }
+  
+  init() {
+    if let bookmarkData = UserDefaults.standard.data(forKey: Self.kBatch_LastFile) {
+      var isStale = false
+      let resolvedURL = try? URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
+      if isStale { UserDefaults.standard.set(try? resolvedURL?.bookmarkData(), forKey: Self.kBatch_LastFile) }
+      self.sourceFile = resolvedURL
+    }
   }
 }
 
