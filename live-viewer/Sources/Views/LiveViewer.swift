@@ -18,6 +18,7 @@ class LiveViewerObjects: ObservableObject {
   
   @Published var reparseWithFoundation = false
   @Published var reparseFoundationResult: URLValues? = nil
+  @Published var reparsefoundationDifferences: [KeyPath<URLValues, String>] = []
   
   var jsRunner = JSDOMRunner()
 }
@@ -57,7 +58,8 @@ struct LiveViewer: View {
       if objects.parseWithFoundation {
         URLForm(
           label: "NSURL (adjusted)",
-          model: Binding(readOnly: self.objects.foundationResult), badKeys: self.$objects.foundationDifferences
+          model: Binding(readOnly: self.objects.foundationResult),
+          badKeys: self.$objects.foundationDifferences
         )
         Text("""
           Note: This is really just for curiosity or to compare with existing behaviour.
@@ -68,7 +70,8 @@ struct LiveViewer: View {
       if objects.reparseWithFoundation {
         URLForm(
           label: "NSURL (via WebURL)",
-          model: Binding(readOnly: self.objects.reparseFoundationResult), badKeys: Binding(readOnly: [])
+          model: Binding(readOnly: self.objects.reparseFoundationResult),
+          badKeys: self.$objects.reparsefoundationDifferences
         )
       }
     }
@@ -80,7 +83,9 @@ struct LiveViewer: View {
         parseWithFoundation ? URL(string: base).flatMap { URL(string: input, relativeTo: $0)?.urlValues } : nil
       self.objects.reparseFoundationResult =
         reparseWithFoundation ? WebURL(input, base: base).flatMap { URL(string: $0.jsModel.href)?.urlValues } : nil
-
+      self.objects.reparsefoundationDifferences =
+        reparseWithFoundation ? URLValues.diff(self.objects.weburl, self.objects.reparseFoundationResult) : []
+      
       self.objects.jsRunner(input: input, base: base) { result in
         self.objects.reference = try? result.get()
         self.objects.differences = URLValues.diff(self.objects.reference, self.objects.weburl)

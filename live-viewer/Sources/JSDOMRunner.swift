@@ -175,7 +175,7 @@ extension JSDOMRunner {
       completion: @escaping ([TestResult])->Void
     ) -> AnyObject {
       let gen = BatchRunner(extractValues: extractValues, generateResult: generateResult, completion: completion)
-      gen.runNextTest(testInputs[...])
+      gen.runNextTest(number: 0, testInputs[...])
       return gen
     }
     
@@ -198,22 +198,21 @@ extension JSDOMRunner {
       self.completion = completion
     }
     
-    private func runNextTest(_ remaining: ArraySlice<TestInput>) {
+    private func runNextTest(number: Int, _ remaining: ArraySlice<TestInput>) {
       var remaining = remaining
-      let idx = remaining.startIndex
       guard let testcase = remaining.popFirst() else {
         completion(results) // Finished.
         return
       }
       guard let inputValues = extractValues(testcase) else {
-        return self.runNextTest(remaining)
+        return self.runNextTest(number: number, remaining)
       }
       jsRunner(input: inputValues.input, base: inputValues.base) { [weak self] referenceResult in
         guard let self = self else { return }
-        if let unexpectedResult = self.generateResult(idx, testcase, try? referenceResult.get()) {
+        if let unexpectedResult = self.generateResult(number, testcase, try? referenceResult.get()) {
           self.results.append(unexpectedResult)
         }
-        return self.runNextTest(remaining)
+        return self.runNextTest(number: number + 1, remaining)
       }
     }
   }
