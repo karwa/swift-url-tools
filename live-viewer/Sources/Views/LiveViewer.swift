@@ -52,7 +52,7 @@ struct LiveViewer: View {
         }.textFieldStyle(PlainTextFieldStyle())
       }
       URLForm(
-        label: "WebURL",
+        label: "WebURL (JS model)",
         model: Binding(readOnly: self.objects.weburl), badKeys: self.$objects.differences
       )
       URLForm(
@@ -83,11 +83,11 @@ struct LiveViewer: View {
     .onReceive(objects.$urlString.combineLatest(objects.$baseString, objects.$parseWithFoundation, objects.$reparseWithFoundation)) {
       (input, base, parseWithFoundation, reparseWithFoundation) in
       
-      self.objects.weburl = WebURL(input, base: base)?.jsModel.urlValues
+      self.objects.weburl = WebURL.JSModel(input, base: base)?.urlValues
       self.objects.foundationResult =
         parseWithFoundation ? URL(string: base).flatMap { URL(string: input, relativeTo: $0)?.urlValues } : nil
       self.objects.reparseFoundationResult =
-        reparseWithFoundation ? WebURL(input, base: base).flatMap { URL(string: $0.jsModel.href)?.urlValues } : nil
+        reparseWithFoundation ? WebURL.JSModel(input, base: base).flatMap { URL(string: $0.href)?.urlValues } : nil
       self.objects.reparsefoundationDifferences =
         reparseWithFoundation ? URLValues.diff(self.objects.weburl, self.objects.reparseFoundationResult) : []
       

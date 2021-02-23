@@ -158,7 +158,7 @@ struct BatchRunner: View {
       var mismatches: [URLConstructorTest.Result] = []
       
       func parseURL(_ input: String, base: String?) -> URLValues? {
-        return WebURL(input, base: base)?.jsModel.urlValues
+        return WebURL.JSModel(input, base: base)?.urlValues
       }
       mutating func reportTestResult(_ result: URLConstructorTest.Result) {
         if !result.failures.isEmpty {
