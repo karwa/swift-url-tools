@@ -10,15 +10,15 @@ class LiveViewerObjects: ObservableObject {
   @Published var weburl: URLValues? = nil
   
   @Published var reference: URLValues? = nil
-  @Published var differences: [KeyPath<URLValues, String>] = []
+  @Published var differences: [PartialKeyPath<URLValues>] = []
   
   @Published var parseWithFoundation = false
   @Published var foundationResult: URLValues? = nil
-  @Published var foundationDifferences: [KeyPath<URLValues, String>] = []
+  @Published var foundationDifferences: [PartialKeyPath<URLValues>] = []
   
   @Published var reparseWithFoundation = false
   @Published var reparseFoundationResult: URLValues? = nil
-  @Published var reparsefoundationDifferences: [KeyPath<URLValues, String>] = []
+  @Published var reparsefoundationDifferences: [PartialKeyPath<URLValues>] = []
   
   var jsRunner = JSDOMRunner()
 }

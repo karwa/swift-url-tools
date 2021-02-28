@@ -17,7 +17,7 @@ class BatchRunnerObjects: ObservableObject {
   @Published var selectedItem: URLConstructorTest.Result? = .none {
     didSet { selectedItemDiff = URLValues.diff(selectedItem?.propertyValues, selectedItem?.testcase.expectedValues) }
   }
-  @Published var selectedItemDiff: [KeyPath<URLValues, String>] = []
+  @Published var selectedItemDiff: [PartialKeyPath<URLValues>] = []
   
   enum ResultsState {
     case parseError(Error)
@@ -179,7 +179,7 @@ struct BatchRunner: View {
 struct MismatchInspector: View {
   let mismatches: [URLConstructorTest.Result]
   let selectedItem: Binding<URLConstructorTest.Result?>
-  let selecteditemDiff: Binding<[KeyPath<URLValues, String>]>
+  let selecteditemDiff: Binding<[PartialKeyPath<URLValues>]>
   
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
