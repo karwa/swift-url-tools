@@ -143,6 +143,9 @@
 		CB778F4A24954F7E00D9103E /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 1150;
 				LastUpgradeCheck = 1240;
 				ORGANIZATIONNAME = "Karl Wagner";
