@@ -8,27 +8,20 @@ import WebURLTestSupport
 struct URLForm: View {
   var label: String = ""
   @Binding var model: URLValues?
-  @Binding var badKeys: [PartialKeyPath<URLValues>]
+  @Binding var badKeys: [URLModelProperty]
  
   var body: some View {
     GroupBox(label: Text(label)) {
       VStack(alignment: .leading) {
-        ForEach(URLValues.allProperties, id: \.keyPath) { property in
+        ForEach(URLModelProperty.allCases, id: \.self) { property in
           HStack {
             Text(property.name)
               .bold()
               .frame(minWidth: 100, maxWidth: 100, alignment: .trailing)
-            let description = self.model.map { model in
-              // Print optional 'nil' strings as empty.
-              if let optionalStringKey = property.keyPath as? KeyPath<URLValues, String?> {
-                return model[keyPath: optionalStringKey] ?? ""
-              }
-              return String(describing: model[keyPath: property.keyPath])
-            } ?? "<URL is nil>"
-            Text(description)
+            Text(self.model.map { $0[property] ?? "(nil)" } ?? "(URL is nil)")
               .frame(alignment: .leading)
             Spacer()
-          }.foregroundColor(self.badKeys.contains(property.keyPath) ? .red : nil)
+          }.foregroundColor(self.badKeys.contains(property) ? .red : nil)
         }
       }
     }

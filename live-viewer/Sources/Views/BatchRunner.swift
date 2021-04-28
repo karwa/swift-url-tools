@@ -14,15 +14,15 @@ class BatchRunnerObjects: ObservableObject {
     didSet { selectedItem = nil }
   }
   
-  @Published var selectedItem: URLConstructorTest.Result? = .none {
+  @Published var selectedItem: WPTConstructorTest.Result? = .none {
     didSet { selectedItemDiff = URLValues.diff(selectedItem?.propertyValues, selectedItem?.testcase.expectedValues) }
   }
-  @Published var selectedItemDiff: [PartialKeyPath<URLValues>] = []
+  @Published var selectedItemDiff: [URLModelProperty] = []
   
   enum ResultsState {
     case parseError(Error)
     case running(AnyObject?)
-    case finished([URLConstructorTest.Result])
+    case finished([WPTConstructorTest.Result])
   }
   
   init() {
@@ -96,13 +96,13 @@ struct BatchRunner: View {
     }
   }
   
-  func parseSelectedConstructorFileOrSetError() -> [URLConstructorTest.FileEntry]? {
+  func parseSelectedConstructorFileOrSetError() -> [WPTConstructorTest.FileEntry]? {
     guard let selectedFileURL = objects.sourceFile else {
       objects.resultsState = nil
       return nil
     }
     do {
-      return try JSONDecoder().decode([URLConstructorTest.FileEntry].self, from: try Data(contentsOf: selectedFileURL))
+      return try JSONDecoder().decode([WPTConstructorTest.FileEntry].self, from: try Data(contentsOf: selectedFileURL))
     } catch {
       objects.resultsState = .parseError(error)
       return nil
@@ -115,7 +115,7 @@ struct BatchRunner: View {
     let runner = JSDOMRunner.BatchRunner.run(
       each: fileContents,
       // Extract (input, base) pair from FileEntry.
-      extractValues: { (entry: URLConstructorTest.FileEntry) -> (String, String)? in
+      extractValues: { (entry: WPTConstructorTest.FileEntry) -> (String, String)? in
         if case .testcase(let test) = entry {
           return (test.input, test.base)
         }
@@ -123,23 +123,23 @@ struct BatchRunner: View {
       },
       // Check to see if the result is a mismatch.
       // This doesn't perform the entire range of checks that a URLConstructorTest requires.
-      generateResult: { testNumber, testcase, actual -> URLConstructorTest.Result? in
+      generateResult: { testNumber, testcase, actual -> WPTConstructorTest.Result? in
         guard case .testcase(let testcase) = testcase else {
           preconditionFailure("Should only see test cases here")
         }
         guard let referenceResult = actual else {
           if !testcase.failure {
-            return URLConstructorTest.Result(testNumber: testNumber, testcase: testcase,
+            return WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
                                              propertyValues: nil, failures: .unexpectedFailureToParse)
           }
           return nil
         }
         guard let expectedResult = testcase.expectedValues else {
-          return URLConstructorTest.Result(testNumber: testNumber, testcase: testcase,
+          return WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
                                            propertyValues: actual, failures: .unexpectedSuccessfulParse)
         }
         let diff = URLValues.diff(expectedResult, referenceResult)
-        return diff.isEmpty ? nil : URLConstructorTest.Result(testNumber: testNumber, testcase: testcase,
+        return diff.isEmpty ? nil : WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
                                                               propertyValues: actual, failures: .propertyMismatch)
   
       // Send the results to the view.
@@ -154,13 +154,13 @@ struct BatchRunner: View {
   func runTestsWithWebURL() {
     guard let fileContents = parseSelectedConstructorFileOrSetError() else { return }
     
-    struct MismatchCollector: URLConstructorTest.Harness {
-      var mismatches: [URLConstructorTest.Result] = []
+    struct MismatchCollector: WPTConstructorTest.Harness {
+      var mismatches: [WPTConstructorTest.Result] = []
       
       func parseURL(_ input: String, base: String?) -> URLValues? {
         return WebURL.JSModel(input, base: base)?.urlValues
       }
-      mutating func reportTestResult(_ result: URLConstructorTest.Result) {
+      mutating func reportTestResult(_ result: WPTConstructorTest.Result) {
         if !result.failures.isEmpty {
           mismatches.append(result)
         }
@@ -177,16 +177,15 @@ struct BatchRunner: View {
 }
 
 struct MismatchInspector: View {
-  let mismatches: [URLConstructorTest.Result]
-  let selectedItem: Binding<URLConstructorTest.Result?>
-  let selecteditemDiff: Binding<[PartialKeyPath<URLValues>]>
+  let mismatches: [WPTConstructorTest.Result]
+  let selectedItem: Binding<WPTConstructorTest.Result?>
+  let selecteditemDiff: Binding<[URLModelProperty]>
   
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
       // List.
       VStack(alignment: .center) {
         List(mismatches, id: \.self, selection: selectedItem) { entry in
-          
           HStack(alignment: .center) {
             VStack(alignment: .leading) {
               Text("\(entry.testcase.input)").lineLimit(1)
@@ -248,7 +247,7 @@ struct MismatchInspector: View {
 /// A horizontal, scrollable list of subtest failures from a URL constructor test result.
 ///
 struct SubtestFailureBadges: View {
-  @Binding var results: URLConstructorTest.Result
+  @Binding var results: WPTConstructorTest.Result
   
   var body: some View {
     ScrollView(.horizontal) {

@@ -52,8 +52,8 @@ struct JSDOMRunner {
     // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
     // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
     // which decodeURIComponent will use to restore the original content.
-    let escapedInput = Data(input.urlEncoded.utf8).base64EncodedString()
-    let escapedBase = Data(base.urlEncoded.utf8).base64EncodedString()
+    let escapedInput = Data(input.urlComponentEncoded.utf8).base64EncodedString()
+    let escapedBase = Data(base.urlComponentEncoded.utf8).base64EncodedString()
     
     let js = #"""
     var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)')), decodeURIComponent(window.atob('\#(escapedBase)')));
