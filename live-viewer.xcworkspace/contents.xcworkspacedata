@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:benchmark">
+      location = "group:swift-url/Benchmarks">
    </FileRef>
    <FileRef
       location = "container:swift-url">
