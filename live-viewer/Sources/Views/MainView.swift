@@ -1,18 +1,18 @@
 import SwiftUI
 
 struct MainView: View {
-  
+
   enum Tabs {
     case liveViewer
     case filePathViewer
     case batchProcessor
   }
   @State var selectedTab = Tabs.liveViewer
-  
+
   let liveView = LiveViewer()
   let filePaths = FilePathViewer()
   let batchRunner = BatchRunner()
-  
+
   var body: some View {
     VStack {
       // Header.

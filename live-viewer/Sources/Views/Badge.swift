@@ -16,7 +16,7 @@ struct Badge: View {
   init(_ text: String) {
     self.init(.constant(text))
   }
-  
+
   var body: some View {
     Text(text.wrappedValue)
       .bold().foregroundColor(textColor).padding(2)
@@ -30,12 +30,12 @@ private struct BadgeColorKey: EnvironmentKey {
 private struct BadgeTextColorKey: EnvironmentKey {
   static let defaultValue = Color.white
 }
-private extension EnvironmentValues {
-  var badgeColor: Color {
+extension EnvironmentValues {
+  fileprivate var badgeColor: Color {
     get { self[BadgeColorKey.self] }
     set { self[BadgeColorKey.self] = newValue }
   }
-  var badgeTextColor: Color {
+  fileprivate var badgeTextColor: Color {
     get { self[BadgeTextColorKey.self] }
     set { self[BadgeTextColorKey.self] = newValue }
   }

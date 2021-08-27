@@ -1,16 +1,15 @@
-import Combine
 import SwiftUI
 import WebURL
 import WebURLTestSupport
 
 class LiveViewerObjects: ObservableObject {
   // User inputs.
-  @Published var urlString  = ""
+  @Published var urlString = ""
   @Published var baseString = "about:blank"
-	// Results of parsing/diffing.
+  // Results of parsing/diffing.
   @Published var weburl = AnnotatedURLValues()
   @Published var reference = AnnotatedURLValues()
-	// JS runner.
+  // JS runner.
   var jsRunner = JSDOMRunner()
 }
 
@@ -21,10 +20,10 @@ struct AnnotatedURLValues {
 
 struct LiveViewer: View {
   @ObservedObject private var objects = LiveViewerObjects()
-  
+
   var body: some View {
     VStack(spacing: 10) {
-      
+
       Image("logo")
         .resizable()
         .aspectRatio(contentMode: .fit)
@@ -70,9 +69,9 @@ struct LiveViewer: View {
       }
     }
   }
-  
+
   func generateClipboardString() -> String {
-  	return """
+    return """
       Inputs:
       {
          input: \(objects.urlString)

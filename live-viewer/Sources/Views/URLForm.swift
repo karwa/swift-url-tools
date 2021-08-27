@@ -9,7 +9,7 @@ struct URLForm: View {
   var label: String = ""
   @Binding var model: URLValues?
   @Binding var badKeys: [URLModelProperty]
- 
+
   var body: some View {
     GroupBox(label: Text(label)) {
       VStack(alignment: .leading) {

@@ -1,15 +1,13 @@
-import Combine
 import SwiftUI
 import WebURL
 import WebURLTestSupport
 
 class FilePathViewerObjects: ObservableObject {
-
   // Inputs.
   @Published var inputFilePath: String = ""
   @Published var inputFilePathFormat: FilePathFormat = .native
   @Published var pathToURLError: String? = nil
-  @Published var inputURLString  = ""
+  @Published var inputURLString = ""
 
   // (Path/URL String) -> WebURL.
   @Published var weburl: URLValues? = nil
@@ -36,11 +34,8 @@ struct FilePathViewer: View {
         Text("File path").tag(Source.filepath)
         Text("URL").tag(Source.url)
       }.pickerStyle(SegmentedPickerStyle())
-       .frame(maxWidth: 200)
+        .frame(maxWidth: 200)
 
-      // Source field. Create a URL from either:
-      // - A file path (in a given format).
-      // - A URL string.
       switch source {
       case .filepath:
         GroupBox(label: Text("URL from File Path")) {
@@ -53,7 +48,7 @@ struct FilePathViewer: View {
                   Text(String(describing: $0))
                 }
               }.pickerStyle(SegmentedPickerStyle())
-               .frame(maxWidth: 200)
+                .frame(maxWidth: 200)
             }.padding([.leading, .trailing, .top], 3)
             Divider()
             HStack {
@@ -77,14 +72,12 @@ struct FilePathViewer: View {
         }
       }
 
-      // Info about the constructed URL.
       URLForm(
         label: "URL Info",
         model: .constant(self.objects.weburl),
         badKeys: .constant([])
       )
 
-      // File path from URL.
       GroupBox(label: Text("File Path from URL")) {
         VStack(alignment: .leading) {
           ForEach(FilePathFormat.allCases, id: \.self) { style in
@@ -129,7 +122,7 @@ struct FilePathViewer: View {
                   fatalError("Unknown path style")
                 }
                 Spacer()
-              }.frame(height: 26, alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/)
+              }.frame(height: 26, alignment: .center)
 
               if style != FilePathFormat.allCases.last {
                 Divider()
@@ -140,11 +133,11 @@ struct FilePathViewer: View {
         }.padding([.top, .bottom], 3)
       }
     }
-    .onReceive(objects.$inputFilePath.combineLatest(objects.$inputFilePathFormat)) { (path, format)  in
-			updateFromFilePath(path, format)
+    .onReceive(objects.$inputFilePath.combineLatest(objects.$inputFilePathFormat)) { path, format in
+      updateFromFilePath(path, format)
     }
     .onReceive(objects.$inputURLString) { urlString in
-			updateFromURLString(urlString)
+      updateFromURLString(urlString)
     }
   }
 }
@@ -189,9 +182,7 @@ extension FilePathViewer {
   }
 }
 
-
 // MARK: - Helpers, Protocol conformances
-
 
 extension FilePathFormat: CaseIterable, Identifiable {
 
@@ -207,7 +198,10 @@ extension Binding {
   fileprivate func withModificationCallback(_ handler: @escaping () -> Void) -> Binding<Value> {
     Binding(
       get: { self.wrappedValue },
-      set: { self.wrappedValue = $0; handler() }
+      set: {
+        self.wrappedValue = $0
+        handler()
+      }
     )
   }
 }

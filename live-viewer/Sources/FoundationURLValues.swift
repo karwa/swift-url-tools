@@ -2,9 +2,9 @@ import Foundation
 import WebURLTestSupport
 
 extension Foundation.URL {
-  
+
   var urlValues: URLValues {
-    let url = self.absoluteURL.standardized // I think this is correct? How do I get the "most standard" URL string?
+    let url = self.absoluteURL.standardized  // I think this is correct? How do I get the "most standard" URL string?
     return URLValues(
       href: url.absoluteString,
       origin: nil,

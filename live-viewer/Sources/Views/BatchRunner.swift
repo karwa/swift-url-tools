@@ -1,44 +1,54 @@
-import Foundation
 import SwiftUI
 import WebURL
 import WebURLTestSupport
 
 class BatchRunnerObjects: ObservableObject {
   static let kBatch_LastFile = "batch_lastfile"
-  
+
   @Published var sourceFile: URL? = .none {
     didSet { UserDefaults.standard.set(try? sourceFile?.bookmarkData(), forKey: Self.kBatch_LastFile) }
   }
-  
+
   @Published var resultsState: ResultsState? = .none {
     didSet { selectedItem = nil }
   }
-  
+
   @Published var selectedItem: WPTConstructorTest.Result? = .none {
     didSet { selectedItemDiff = URLValues.diff(selectedItem?.propertyValues, selectedItem?.testcase.expectedValues) }
   }
+
   @Published var selectedItemDiff: [URLModelProperty] = []
-  
+
+  let webURLRunnerQueue = DispatchQueue(label: "WebURL batch testing")
+
   enum ResultsState {
     case parseError(Error)
     case running(AnyObject?)
     case finished([WPTConstructorTest.Result])
+
+    var isRunning: Bool {
+      if case .running = self {
+        return true
+      }
+      return false
+    }
   }
-  
+
   init() {
     if let bookmarkData = UserDefaults.standard.data(forKey: Self.kBatch_LastFile) {
       var isStale = false
       let resolvedURL = try? URL(resolvingBookmarkData: bookmarkData, bookmarkDataIsStale: &isStale)
-      if isStale { UserDefaults.standard.set(try? resolvedURL?.bookmarkData(), forKey: Self.kBatch_LastFile) }
+      if isStale {
+        UserDefaults.standard.set(try? resolvedURL?.bookmarkData(), forKey: Self.kBatch_LastFile)
+      }
       self.sourceFile = resolvedURL
     }
   }
 }
 
-
 struct BatchRunner: View {
   @ObservedObject var objects = BatchRunnerObjects()
-  
+
   var body: some View {
     VStack {
       // File picker & actions.
@@ -65,10 +75,13 @@ struct BatchRunner: View {
           Spacer()
           Button("Test with WebURL") { runTestsWithWebURL() }
           Button("Verify using JSDOM") { checkWithReference() }
-        }.disabled(objects.sourceFile == nil)
+        }.disabled(objects.sourceFile == nil || objects.resultsState?.isRunning == true)
         VStack(alignment: .leading) {
           Text("- 'Test with WebURL' runs a full WPT URL constructor test.")
-          Text("- 'Verify using JSDOM' parses the input and base strings and checks the property values. It is not a full constructor test.")
+          Text(
+            "- 'Verify using JSDOM' parses the input and base strings and checks the property values. " +
+            "It is not a full constructor test."
+          )
         }.foregroundColor(.secondary)
       }
       Divider()
@@ -87,7 +100,7 @@ struct BatchRunner: View {
           } else {
             MismatchInspector(
               mismatches: mismatches,
-              selectedItem: Binding(get: { objects.selectedItem }, set: { objects.selectedItem = $0 }),
+              selectedItem: $objects.selectedItem,
               selecteditemDiff: .constant(objects.selectedItemDiff)
             )
           }
@@ -95,7 +108,7 @@ struct BatchRunner: View {
       }.padding(.top, 10)
     }
   }
-  
+
   func parseSelectedConstructorFileOrSetError() -> [WPTConstructorTest.FileEntry]? {
     guard let selectedFileURL = objects.sourceFile else {
       objects.resultsState = nil
@@ -108,10 +121,10 @@ struct BatchRunner: View {
       return nil
     }
   }
-  
+
   func checkWithReference() {
     guard let fileContents = parseSelectedConstructorFileOrSetError() else { return }
-    
+
     let runner = JSDOMRunner.BatchRunner.run(
       each: fileContents,
       // Extract (input, base) pair from FileEntry.
@@ -128,35 +141,41 @@ struct BatchRunner: View {
           preconditionFailure("Should only see test cases here")
         }
         guard let referenceResult = actual else {
-          if !testcase.failure {
-            return WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
-                                             propertyValues: nil, failures: .unexpectedFailureToParse)
+          guard testcase.failure else {
+            return WPTConstructorTest.Result(
+              testNumber: testNumber, testcase: testcase,
+              propertyValues: nil, failures: .unexpectedFailureToParse
+            )
           }
-          return nil
+          return nil // Success. Correct failure to parse.
         }
         guard let expectedResult = testcase.expectedValues else {
-          return WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
-                                           propertyValues: actual, failures: .unexpectedSuccessfulParse)
+          return WPTConstructorTest.Result(
+            testNumber: testNumber, testcase: testcase,
+            propertyValues: actual, failures: .unexpectedSuccessfulParse
+          )
         }
-        let diff = URLValues.diff(expectedResult, referenceResult)
-        return diff.isEmpty ? nil : WPTConstructorTest.Result(testNumber: testNumber, testcase: testcase,
-                                                              propertyValues: actual, failures: .propertyMismatch)
-  
-      // Send the results to the view.
-      }, completion: { mismatches in
+        guard URLValues.diff(expectedResult, referenceResult).isEmpty else {
+          return WPTConstructorTest.Result(
+            testNumber: testNumber, testcase: testcase,
+            propertyValues: actual, failures: .propertyMismatch
+          )
+        }
+        return nil // Success. Parsed with correct result.
+      },
+      completion: { mismatches in
         objects.resultsState = .finished(mismatches)
         objects.selectedItem = mismatches.first
       })
-      objects.resultsState = .running(runner)
+    objects.resultsState = .running(runner)
   }
-  
-  
+
   func runTestsWithWebURL() {
     guard let fileContents = parseSelectedConstructorFileOrSetError() else { return }
-    
+
     struct MismatchCollector: WPTConstructorTest.Harness {
       var mismatches: [WPTConstructorTest.Result] = []
-      
+
       func parseURL(_ input: String, base: String?) -> URLValues? {
         return WebURL.JSModel(input, base: base)?.urlValues
       }
@@ -166,21 +185,25 @@ struct BatchRunner: View {
         }
       }
     }
-    
+
     objects.resultsState = .running(nil)
-    var collector = MismatchCollector()
-    collector.runTests(fileContents)
-    objects.resultsState = .finished(collector.mismatches)
-    objects.selectedItem = collector.mismatches.first
+    objects.webURLRunnerQueue.async {
+      var collector = MismatchCollector()
+      collector.runTests(fileContents)
+      DispatchQueue.main.async {
+        objects.resultsState = .finished(collector.mismatches)
+        objects.selectedItem = collector.mismatches.first
+      }
+    }
   }
-  
+
 }
 
 struct MismatchInspector: View {
   let mismatches: [WPTConstructorTest.Result]
   let selectedItem: Binding<WPTConstructorTest.Result?>
   let selecteditemDiff: Binding<[URLModelProperty]>
-  
+
   var body: some View {
     HStack(alignment: .top, spacing: 12) {
       // List.
@@ -195,19 +218,18 @@ struct MismatchInspector: View {
             Divider()
             Badge(String(entry.testNumber)).badgeColor(.yellow).badgeTextColor(.black)
           }
-          
         }.frame(width: 200)
-        
+
         Text("\(mismatches.count) mismatches").foregroundColor(.secondary)
       }
-      
-			// Inspector.
+
+      // Inspector.
       VStack {
         if let selection = selectedItem.wrappedValue {
           VStack(alignment: .leading, spacing: 10) {
-            
+
             VStack(alignment: .leading) {
-              HStack() {
+              HStack {
                 Text("Input").bold()
                 TextField("", text: .constant(selection.testcase.input))
               }
@@ -216,9 +238,9 @@ struct MismatchInspector: View {
                 TextField("", text: .constant(selection.testcase.base ?? ""))
               }
             }
-            
+
             SubtestFailureBadges(results: .constant(selection))
-             
+
             URLForm(
               label: "Actual",
               model: .constant(selection.propertyValues),
@@ -248,7 +270,7 @@ struct MismatchInspector: View {
 ///
 struct SubtestFailureBadges: View {
   @Binding var results: WPTConstructorTest.Result
-  
+
   var body: some View {
     ScrollView(.horizontal) {
       HStack {
