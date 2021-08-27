@@ -4,23 +4,19 @@ import WebURL
 import WebURLTestSupport
 
 class LiveViewerObjects: ObservableObject {
+  // User inputs.
   @Published var urlString  = ""
   @Published var baseString = "about:blank"
-  
-  @Published var weburl: URLValues? = nil
-  
-  @Published var reference: URLValues? = nil
-  @Published var differences: [URLModelProperty] = []
-  
-  @Published var parseWithFoundation = false
-  @Published var foundationResult: URLValues? = nil
-  @Published var foundationDifferences: [URLModelProperty] = []
-  
-  @Published var reparseWithFoundation = false
-  @Published var reparseFoundationResult: URLValues? = nil
-  @Published var reparsefoundationDifferences: [URLModelProperty] = []
-  
+	// Results of parsing/diffing.
+  @Published var weburl = AnnotatedURLValues()
+  @Published var reference = AnnotatedURLValues()
+	// JS runner.
   var jsRunner = JSDOMRunner()
+}
+
+struct AnnotatedURLValues {
+  var values: URLValues? = nil
+  var flaggedKeys: [URLModelProperty] = []
 }
 
 struct LiveViewer: View {
@@ -35,15 +31,9 @@ struct LiveViewer: View {
         .padding(8)
         .frame(height: 50, alignment: .center)
         .contextMenu {
-          Button("Copy to clipboard") {
-            let pasteboard = NSPasteboard.general
-            pasteboard.declareTypes([.string], owner: nil)
-            pasteboard.setString(self.generateClipboardString(), forType: .string)
-          }
-          Button("Show Foundation result") { self.objects.parseWithFoundation.toggle() }
-          Button("Re-parse WebURL result with Foundation") { self.objects.reparseWithFoundation.toggle() }
+          Button("Copy to clipboard") { copyToClipboard(generateClipboardString()) }
         }
-      
+
       GroupBox {
         VStack {
           TextField("URL String", text: $objects.urlString).padding([.leading, .trailing, .top], 3)
@@ -51,66 +41,49 @@ struct LiveViewer: View {
           TextField("Base", text: $objects.baseString).padding([.leading, .trailing, .bottom], 3)
         }.textFieldStyle(PlainTextFieldStyle())
       }
+
       URLForm(
         label: "WebURL (JS model)",
-        model: Binding(readOnly: self.objects.weburl), badKeys: self.$objects.differences
+        model: self.$objects.weburl.values,
+        badKeys: self.$objects.weburl.flaggedKeys
       )
       URLForm(
         label: "Reference result",
-        model: Binding(readOnly: self.objects.reference), badKeys: self.$objects.differences
+        model: self.$objects.reference.values,
+        badKeys: self.$objects.reference.flaggedKeys
       )
-      
-      if objects.parseWithFoundation {
-        URLForm(
-          label: "NSURL (adjusted)",
-          model: Binding(readOnly: self.objects.foundationResult),
-          badKeys: self.$objects.foundationDifferences
-        )
-        Text("""
-          Note: This is really just for curiosity or to compare with existing behaviour.
-          NS/CFURL was never designed to match the model in the WHATWG spec.
-          """).foregroundColor(.secondary)
-      }
-      
-      if objects.reparseWithFoundation {
-        URLForm(
-          label: "NSURL (via WebURL)",
-          model: Binding(readOnly: self.objects.reparseFoundationResult),
-          badKeys: self.$objects.reparsefoundationDifferences
-        )
-      }
     }
-    .onReceive(objects.$urlString.combineLatest(objects.$baseString, objects.$parseWithFoundation, objects.$reparseWithFoundation)) {
-      (input, base, parseWithFoundation, reparseWithFoundation) in
-      
-      self.objects.weburl = WebURL.JSModel(input, base: base)?.urlValues
-      self.objects.foundationResult =
-        parseWithFoundation ? URL(string: base).flatMap { URL(string: input, relativeTo: $0)?.urlValues } : nil
-      self.objects.reparseFoundationResult =
-        reparseWithFoundation ? WebURL.JSModel(input, base: base).flatMap { URL(string: $0.href)?.urlValues } : nil
-      self.objects.reparsefoundationDifferences =
-        reparseWithFoundation ? URLValues.diff(self.objects.weburl, self.objects.reparseFoundationResult) : []
-      
+    .onReceive(objects.$urlString.combineLatest(objects.$baseString)) { (input, base) in
+
+      let webURLValues = WebURL.JSModel(input, base: base)?.urlValues
       self.objects.jsRunner(input: input, base: base) { result in
-        self.objects.reference = try? result.get()
-        self.objects.differences = URLValues.diff(self.objects.reference, self.objects.weburl)
-        self.objects.foundationDifferences =
-          parseWithFoundation ? URLValues.diff(self.objects.reference, self.objects.foundationResult) : []
+        let referenceValues = try? result.get()
+        let webURLReferenceDiff = URLValues.diff(webURLValues, referenceValues)
+        self.objects.weburl = AnnotatedURLValues(
+          values: webURLValues,
+          flaggedKeys: webURLReferenceDiff
+        )
+        self.objects.reference = AnnotatedURLValues(
+          values: referenceValues,
+          flaggedKeys: webURLReferenceDiff
+        )
       }
     }
   }
   
   func generateClipboardString() -> String {
-  	return
-      """
-      inputs: {
+  	return """
+      Inputs:
+      {
          input: \(objects.urlString)
          base:  \(objects.baseString)
       }
 
-      WebURL result: \(objects.weburl?.description ?? "<nil>")
+      WebURL result:
+      \(objects.weburl.values?.description ?? "<nil>")
 
-      Reference result: \(objects.reference?.description ?? "<nil>")
+      Reference result:
+      \(objects.reference.values?.description ?? "<nil>")
       """
   }
 }
