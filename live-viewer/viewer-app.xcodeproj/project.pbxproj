@@ -21,6 +21,7 @@
 		CB9C387F25CD94E100E69BA1 /* WebURLTestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = CB9C387E25CD94E100E69BA1 /* WebURLTestSupport */; };
 		CBBC3FEA26D8E897009E0E86 /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBBC3FE926D8E897009E0E86 /* Clipboard.swift */; };
 		CBBDCF1925C31F9B00233096 /* WebURL in Frameworks */ = {isa = PBXBuildFile; productRef = CBBDCF1825C31F9B00233096 /* WebURL */; };
+		CBEF0208265018D200824548 /* LiveViewer_FilePath.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBEF0207265018D200824548 /* LiveViewer_FilePath.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		CB87479A25CFAAE1004F2347 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		CB9C387925CD03F900E69BA1 /* BatchRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRunner.swift; sourceTree = "<group>"; };
 		CBBC3FE926D8E897009E0E86 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
+		CBEF0207265018D200824548 /* LiveViewer_FilePath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveViewer_FilePath.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				CB778F5724954F7E00D9103E /* LiveViewer.swift */,
+				CBEF0207265018D200824548 /* LiveViewer_FilePath.swift */,
 				CB9C387925CD03F900E69BA1 /* BatchRunner.swift */,
 				CB87479A25CFAAE1004F2347 /* MainView.swift */,
 				CB34A53225C2D25A006ABAD2 /* URLForm.swift */,
@@ -204,6 +207,7 @@
 				CB34A53925C2E1D7006ABAD2 /* JSDOMRunner.swift in Sources */,
 				CB9C387A25CD03F900E69BA1 /* BatchRunner.swift in Sources */,
 				CB34A53625C2D2BD006ABAD2 /* FoundationURLValues.swift in Sources */,
+				CBEF0208265018D200824548 /* LiveViewer_FilePath.swift in Sources */,
 				CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
