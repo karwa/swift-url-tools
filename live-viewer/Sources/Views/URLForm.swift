@@ -27,10 +27,3 @@ struct URLForm: View {
     }
   }
 }
-
-extension Binding {
-  
-  init(readOnly value: Value) {
-    self.init(get: { value }, set: { _ in })
-  }
-}

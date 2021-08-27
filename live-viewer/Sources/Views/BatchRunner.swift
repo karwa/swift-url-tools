@@ -88,7 +88,7 @@ struct BatchRunner: View {
             MismatchInspector(
               mismatches: mismatches,
               selectedItem: Binding(get: { objects.selectedItem }, set: { objects.selectedItem = $0 }),
-              selecteditemDiff: Binding(readOnly: objects.selectedItemDiff)
+              selecteditemDiff: .constant(objects.selectedItemDiff)
             )
           }
         }
@@ -209,24 +209,24 @@ struct MismatchInspector: View {
             VStack(alignment: .leading) {
               HStack() {
                 Text("Input").bold()
-                TextField("", text: Binding(readOnly: selection.testcase.input))
+                TextField("", text: .constant(selection.testcase.input))
               }
               HStack {
                 Text("Base").bold()
-                TextField("", text: Binding(readOnly: selection.testcase.base))
+                TextField("", text: .constant(selection.testcase.base ?? ""))
               }
             }
             
-            SubtestFailureBadges(results: Binding(readOnly: selection))
+            SubtestFailureBadges(results: .constant(selection))
              
             URLForm(
               label: "Actual",
-              model: Binding(readOnly: selection.propertyValues),
+              model: .constant(selection.propertyValues),
               badKeys: selecteditemDiff
             )
             URLForm(
               label: "Expected",
-              model: Binding(readOnly: selection.testcase.expectedValues),
+              model: .constant(selection.testcase.expectedValues),
               badKeys: selecteditemDiff
             )
           }
