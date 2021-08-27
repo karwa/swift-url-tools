@@ -35,7 +35,7 @@ struct JSDOMRunner {
 
   /// Must only be called on the main queue. The given completion handler is also invoked on the main queue.
   ///
-  func callAsFunction(input: String, base: String, completionHandler: @escaping (Result<(URLValues), Error>)->Void) {
+  func callAsFunction(input: String, base: String?, completionHandler: @escaping (Result<(URLValues), Error>)->Void) {
     
     enum JSDomRunnerError: Error {
       case deserialisedToUnexpectedDataType
@@ -53,10 +53,15 @@ struct JSDOMRunner {
     // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
     // which decodeURIComponent will use to restore the original content.
     let escapedInput = Data(input.urlComponentEncoded.utf8).base64EncodedString()
-    let escapedBase = Data(base.urlComponentEncoded.utf8).base64EncodedString()
-    
-    let js = #"""
-    var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)')), decodeURIComponent(window.atob('\#(escapedBase)')));
+
+    var js = #"var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)'))"#
+    if let base = base {
+      let escapedBase = Data(base.urlComponentEncoded.utf8).base64EncodedString()
+      js += #", decodeURIComponent(window.atob('\#(escapedBase)')));"#
+    } else {
+			js += #");"#
+    }
+    js += #"""
     var entries = new Map();
     [ "href", "protocol", "username", "password", "host", "hostname", "origin", "port", "pathname", "search", "hash" ].forEach(function(property){
       entries.set(property, url[property]);
@@ -170,7 +175,7 @@ extension JSDOMRunner {
 
     static func run(
       each testInputs: [TestInput],
-      extractValues: @escaping (TestInput) -> (input: String, base: String)?,
+      extractValues: @escaping (TestInput) -> (input: String, base: String?)?,
       generateResult: @escaping (Int, TestInput, URLValues?)->TestResult?,
       completion: @escaping ([TestResult])->Void
     ) -> AnyObject {
@@ -182,12 +187,12 @@ extension JSDOMRunner {
     var results: [TestResult]
     var jsRunner: JSDOMRunner
 
-    let extractValues: (TestInput) -> (input: String, base: String)?
+    let extractValues: (TestInput) -> (input: String, base: String?)?
     let generateResult: (Int, TestInput, URLValues?) -> TestResult?
     let completion: ([TestResult]) -> Void
 
     private init(
-      extractValues: @escaping (TestInput) -> (input: String, base: String)?,
+      extractValues: @escaping (TestInput) -> (input: String, base: String?)?,
       generateResult: @escaping (Int, TestInput, URLValues?) -> TestResult?,
       completion: @escaping ([TestResult]) -> Void
     ) {

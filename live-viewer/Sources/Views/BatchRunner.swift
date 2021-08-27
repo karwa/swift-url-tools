@@ -115,7 +115,7 @@ struct BatchRunner: View {
     let runner = JSDOMRunner.BatchRunner.run(
       each: fileContents,
       // Extract (input, base) pair from FileEntry.
-      extractValues: { (entry: WPTConstructorTest.FileEntry) -> (String, String)? in
+      extractValues: { (entry: WPTConstructorTest.FileEntry) -> (String, String?)? in
         if case .testcase(let test) = entry {
           return (test.input, test.base)
         }
@@ -189,7 +189,7 @@ struct MismatchInspector: View {
           HStack(alignment: .center) {
             VStack(alignment: .leading) {
               Text("\(entry.testcase.input)").lineLimit(1)
-              Text("\(entry.testcase.base)").lineLimit(1)
+              Text("\(entry.testcase.base ?? "")").lineLimit(1)
             }
             Spacer()
             Divider()
