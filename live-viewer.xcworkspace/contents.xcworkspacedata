@@ -5,6 +5,9 @@
       location = "group:swift-url/Benchmarks">
    </FileRef>
    <FileRef
+      location = "group:swift-url/Fuzzers">
+   </FileRef>
+   <FileRef
       location = "container:swift-url">
    </FileRef>
    <FileRef
