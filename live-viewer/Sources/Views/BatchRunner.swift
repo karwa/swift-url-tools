@@ -193,7 +193,7 @@ struct MismatchInspector: View {
             }
             Spacer()
             Divider()
-            Badge(text: String(entry.testNumber)).badgeColor(.yellow).badgeTextColor(.black)
+            Badge(String(entry.testNumber)).badgeColor(.yellow).badgeTextColor(.black)
           }
           
         }.frame(width: 200)
@@ -253,22 +253,22 @@ struct SubtestFailureBadges: View {
     ScrollView(.horizontal) {
       HStack {
         if results.failures.contains(.baseURLFailedToParse) {
-          Badge(text: "base URL failed to parse")
+          Badge("base URL failed to parse")
         }
         if results.failures.contains(.inputDidNotFailWhenUsedAsBaseURL) {
-          Badge(text: "input didn't fail as baseURL")
+          Badge("input didn't fail as baseURL")
         }
         if results.failures.contains(.unexpectedFailureToParse) {
-          Badge(text: "Unexpected failure")
+          Badge("Unexpected failure")
         }
         if results.failures.contains(.unexpectedSuccessfulParse) {
-          Badge(text: "Unexpected success")
+          Badge("Unexpected success")
         }
         if results.failures.contains(.propertyMismatch) {
-          Badge(text: "Property mismatch")
+          Badge("Property mismatch")
         }
         if results.failures.contains(.notIdempotent) {
-          Badge(text: "Not idempotent")
+          Badge("Not idempotent")
         }
       }.badgeColor(.red).badgeTextColor(.black)
     }

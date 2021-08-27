@@ -4,14 +4,23 @@ import SwiftUI
 /// Use the `.badgeColor()` and `.badgeTextColor()` environment modifiers to customise the badge's appearance.
 ///
 struct Badge: View {
-  @State var text: String
-  @Environment(\.badgeTextColor) var _textColor
-  @Environment(\.badgeColor) var _badgeColor
+
+  private var text: Binding<String>
+  @Environment(\.badgeTextColor) private var textColor
+  @Environment(\.badgeColor) private var badgeColor
+
+  init(_ text: Binding<String>) {
+    self.text = text
+  }
+
+  init(_ text: String) {
+    self.init(.constant(text))
+  }
   
   var body: some View {
-    Text(text)
-      .bold().foregroundColor(_textColor).padding(2)
-      .background(RoundedRectangle(cornerRadius: 5).foregroundColor(_badgeColor))
+    Text(text.wrappedValue)
+      .bold().foregroundColor(textColor).padding(2)
+      .background(RoundedRectangle(cornerRadius: 5).foregroundColor(badgeColor))
   }
 }
 
@@ -21,7 +30,7 @@ private struct BadgeColorKey: EnvironmentKey {
 private struct BadgeTextColorKey: EnvironmentKey {
   static let defaultValue = Color.white
 }
-extension EnvironmentValues {
+private extension EnvironmentValues {
   var badgeColor: Color {
     get { self[BadgeColorKey.self] }
     set { self[BadgeColorKey.self] = newValue }
