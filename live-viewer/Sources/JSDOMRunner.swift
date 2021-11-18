@@ -57,11 +57,11 @@ extension URLValues {
       // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
       // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
       // which decodeURIComponent will use to restore the original content.
-      let escapedInput = Data(input.urlComponentEncoded.utf8).base64EncodedString()
+      let escapedInput = Data(input.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
 
       var js = #"var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)'))"#
       if let base = base {
-        let escapedBase = Data(base.urlComponentEncoded.utf8).base64EncodedString()
+        let escapedBase = Data(base.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
         js += #", decodeURIComponent(window.atob('\#(escapedBase)')));"#
       } else {
         js += #");"#
@@ -142,11 +142,11 @@ extension URLValues {
       // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
       // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
       // which decodeURIComponent will use to restore the original content.
-      let escapedInput = Data(input.urlComponentEncoded.utf8).base64EncodedString()
+      let escapedInput = Data(input.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
 
       var js = #"var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)'))"#
       if let base = base {
-        let escapedBase = Data(base.urlComponentEncoded.utf8).base64EncodedString()
+        let escapedBase = Data(base.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
         js += #", decodeURIComponent(window.atob('\#(escapedBase)')));"#
       } else {
         js += #");"#
