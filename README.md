@@ -1,12 +1,16 @@
 # WebURL Live Viewer
 
-![UI example 1](example.png) ![UI example 2](example2.png)
+<img src="example.png" height="50%" width="50%"><img src="example2.png" height="50%" width="50%">
 
-A tool for [swift-url](https://www.github.com/karwa/swift-url) with a similar interface to the [JSDOM live URL viewer](https://jsdom.github.io/whatwg-url/), which allows easy comparisons of WebURL with the JSDom reference implementation.
+A developer utility for [swift-url](https://www.github.com/karwa/swift-url). It has a similar interface to the [JSDOM live URL viewer](https://jsdom.github.io/whatwg-url/), and allows easy comparisons of WebURL with the JSDom reference implementation among other things.
 
-Requires macOS Catalina or newer.
+> If the logo didn't make it clear, this isn't supposed to be a pretty App. It has a pretty basic design, nothing fancy - it's a tool for WebURL developers (basically me, Karl) to exercise the API interactively. But by all means, play with it if you like 🙂
 
-The app contains a local copy of the JSDom live URL viewer website (in live-viewer/Resources/live-viewer/), which is loaded in to a WKWebView. Unfortunately, I haven't had any success getting it to work in a view-less JavascriptCore context (that would be invaluable for scripting purposes, generating/verifying additional test files for swift-url).
+Requires macOS Big Sur or newer. It also supports iOS (because why not? Although really, I've never used it on iOS, and I can't think of any reason to do so).
+
+<img src="example3.png" height="33%" width="33%"> <img src="example4.png" height="33%" width="33%">
+
+The app contains a local copy of the JSDom live URL viewer website (in `live-viewer/Resources/live-viewer/`), which is loaded in to a WKWebView. Unfortunately, I haven't had any success getting it to work in a view-less JavascriptCore context, but in theory that might work one day.
 
 ## Getting Started
 
