@@ -16,7 +16,7 @@ import SwiftUI
 
 struct MainView: View {
 
-  enum Tabs {
+  enum Tabs: Int, CaseIterable {
     case liveViewer
     case filePathViewer
     case batchProcessor
@@ -40,6 +40,16 @@ struct MainView: View {
         case .batchProcessor: BatchRunner(modelData: $batchRunnerData)
         }
       }.padding(16)
+
+      // FIXME: Is there a way to add keyboard shortcuts in SwiftUI without creaing an interactive view?
+      Button("Next Tab") { selectedTab = Tabs(rawValue: selectedTab.rawValue + 1) ?? Tabs.allCases.first! }
+      .opacity(0)
+      .keyboardShortcut("]", modifiers: [.command, .shift])
+      Button("Previous Tab") { selectedTab = Tabs(rawValue: selectedTab.rawValue - 1) ?? Tabs.allCases.last! }
+      .opacity(0)
+      .keyboardShortcut("[", modifiers: [.command, .shift])
+
+
     }.toolbar {
       ToolbarItem(placement: .principal) {
         Picker("", selection: $selectedTab) {
