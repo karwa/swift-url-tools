@@ -25,7 +25,7 @@ struct LiveViewer: View {
     var weburlResult = AnnotatedURLValues()
     var referenceResult = AnnotatedURLValues()
 
-    var runnerActionID = 0
+    var runnerOperationID = 0
     var jsRunner = JSDOMRunner()
   }
 }
@@ -76,29 +76,35 @@ extension LiveViewer {
   /// The values are calculated asynchronously.
   ///
   fileprivate func updateResults(_ input: String, _ base: String) {
+    Task { await doUpdateResults(input, base) }
+  }
+
+  /// Calculates new `weburlResult` and `referenceResult` values from the given string and base URL string.
+  /// The values are calculated asynchronously.
+  ///
+  @MainActor
+  private func doUpdateResults(_ input: String, _ base: String) async {
+
+    // Since we suspend and hop to the JSDOMRunner's executor, this function may be called re-entrantly.
+    // Assign a unique ID to each Task, so the UI is only updated with the results of the latest Task.
+    modelData.runnerOperationID &+= 1
+    let thisOperationID = modelData.runnerOperationID
 
     let webURLValues = WebURL.JSModel(input, base: base)?.urlValues
+    let referenceValues = await modelData.jsRunner.parse(input: input, base: base)
 
-    // This calculation is re-entrant: we may submit new actions to the runner
-    // while others are still in-flight, and they may arrive out of order.
-    modelData.runnerActionID &+= 1
-    let reentrantActionID = modelData.runnerActionID
-    modelData.jsRunner(input: input, base: base) { result in
-      // Ensure we only update the display with the results for the latest request.
-      guard modelData.runnerActionID == reentrantActionID else {
-        return
-      }
-      let referenceValues = try? result.get()
-      let webURLReferenceDiff = URLValues.diff(webURLValues, referenceValues)
-      modelData.weburlResult = AnnotatedURLValues(
-        values: webURLValues,
-        flaggedKeys: webURLReferenceDiff
-      )
-      modelData.referenceResult = AnnotatedURLValues(
-        values: referenceValues,
-        flaggedKeys: webURLReferenceDiff
-      )
+    guard modelData.runnerOperationID == thisOperationID else {
+      return
     }
+    let webURLReferenceDiff = URLValues.diff(webURLValues, referenceValues)
+    modelData.weburlResult = AnnotatedURLValues(
+      values: webURLValues,
+      flaggedKeys: webURLReferenceDiff
+    )
+    modelData.referenceResult = AnnotatedURLValues(
+      values: referenceValues,
+      flaggedKeys: webURLReferenceDiff
+    )
   }
 }
 

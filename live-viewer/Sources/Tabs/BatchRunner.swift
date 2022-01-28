@@ -45,7 +45,7 @@ struct BatchRunner: View {
 
     enum ResultsState {
       case parseError(Error)
-      case running(AnyObject?)
+      case running
       case finished([WPTConstructorTest.Result])
 
       var isRunning: Bool {
@@ -110,7 +110,7 @@ extension BatchRunner {
       HStack {
         Spacer()
         Button("Test with WebURL") { runTestsWithWebURL() }
-        Button("Verify with JSDOM") { runVerifyWithJSDOM() }
+        Button("Verify with JSDOM") { Task { await runVerifyWithJSDOM() } }
       }.disabled(modelData.sourceFile == nil || modelData.resultsState?.isRunning == true)
       Spacer()
       VStack(alignment: .leading) {
@@ -247,21 +247,27 @@ extension BatchRunner {
     }
   }
 
-  fileprivate func runVerifyWithJSDOM() {
+  @MainActor
+  fileprivate func runVerifyWithJSDOM() async {
     guard let fileContents = parseSourceFileOrSetError() else { return }
+    modelData.resultsState = .running
 
-    let runner = JSDOMRunner.BatchRunner.run(
-      each: fileContents,
-      // Extract (input, base) pair from FileEntry.
-      extractValues: { (entry: WPTConstructorTest.FileEntry) -> (String, String?)? in
+    let mismatches = await JSDOMRunner.runAll(
+      tests: fileContents,
+      extractValues: {
+        // Extract (input, base) pair from FileEntry.
+        (entry: WPTConstructorTest.FileEntry) -> (String, String?)? in
+
         if case .testcase(let test) = entry {
           return (test.input, test.base)
         }
         return nil
       },
-      // Check to see if the result is a mismatch.
-      // This doesn't perform the entire range of checks that a full WPTConstructorTest does.
-      generateResult: { testNumber, testcase, actual -> WPTConstructorTest.Result? in
+      generateResult: {
+        // Check to see if the result is a mismatch.
+        // This doesn't perform the entire range of checks that a full WPTConstructorTest does.
+        (testNumber, testcase, actual) -> WPTConstructorTest.Result? in
+
         guard case .testcase(let testcase) = testcase else {
           preconditionFailure("Should only see test cases here")
         }
@@ -289,14 +295,10 @@ extension BatchRunner {
         }
         // Success. Parsed with correct result.
         return nil
-      },
-      // Store the mismatches in our modelData.
-      completion: { mismatches in
-        modelData.resultsState = .finished(mismatches)
-        modelData.selectedItem = mismatches.first
       })
 
-    modelData.resultsState = .running(runner)
+    modelData.resultsState = .finished(mismatches)
+    modelData.selectedItem = mismatches.first
   }
 
   fileprivate func runTestsWithWebURL() {
@@ -315,7 +317,7 @@ extension BatchRunner {
       }
     }
 
-    modelData.resultsState = .running(nil)
+    modelData.resultsState = .running
     modelData.webURLRunnerQueue.async {
       var collector = MismatchCollector()
       collector.runTests(fileContents)

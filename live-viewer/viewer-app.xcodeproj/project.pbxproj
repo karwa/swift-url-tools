@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CB255BD627A2E82F00792EA9 /* polyfills in Resources */ = {isa = PBXBuildFile; fileRef = CB255BD527A2E82F00792EA9 /* polyfills */; };
 		CB310FEC25D65FE300D1B6B9 /* Badge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB310FEB25D65FE300D1B6B9 /* Badge.swift */; };
 		CB34A53025C2350A006ABAD2 /* live-viewer in Resources */ = {isa = PBXBuildFile; fileRef = CB34A52F25C2350A006ABAD2 /* live-viewer */; };
 		CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53225C2D25A006ABAD2 /* URLForm.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CB255BD527A2E82F00792EA9 /* polyfills */ = {isa = PBXFileReference; lastKnownFileType = folder; path = polyfills; sourceTree = "<group>"; };
 		CB310FEB25D65FE300D1B6B9 /* Badge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badge.swift; sourceTree = "<group>"; };
 		CB34A52F25C2350A006ABAD2 /* live-viewer */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "live-viewer"; sourceTree = "<group>"; };
 		CB34A53225C2D25A006ABAD2 /* URLForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLForm.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 		CB9C386B25CCB1A700E69BA1 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				CB255BD527A2E82F00792EA9 /* polyfills */,
 				CB34A52F25C2350A006ABAD2 /* live-viewer */,
 				CB778F5924954F8000D9103E /* Assets.xcassets */,
 				CB778F5E24954F8000D9103E /* Main.storyboard */,
@@ -212,6 +215,7 @@
 			files = (
 				CB34A53025C2350A006ABAD2 /* live-viewer in Resources */,
 				CB778F5A24954F8000D9103E /* Assets.xcassets in Resources */,
+				CB255BD627A2E82F00792EA9 /* polyfills in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
