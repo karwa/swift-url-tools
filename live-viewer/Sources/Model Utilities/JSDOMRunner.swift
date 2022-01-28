@@ -13,231 +13,215 @@
 // limitations under the License.
 
 import WebURLTestSupport
+import JavaScriptCore
 
-#if false  // 'true' = use offscreen WKWebView, 'false' = use JavaScriptCore
+/// An actor providing serialized, async access to a JavaScript engine.
+///
+internal actor JavaScriptEngine {
 
-  import WebKit
+  // A full JS interop design is out-of-scope for this project.
+  //
+  // JavaScriptCore is a bit of an odd API to bridge to Swift concurrency.
+  // JSContext and JSValue are safe to use from any thread, but they will be internally
+  // serialized and block other threads using the same underlying JSVirtualMachine:
+  //
+  // > The JavaScriptCore API is thread-safe—for example, you can create JSValue objects
+  // > or evaluate scripts from any thread—however, all other threads attempting to use
+  // > the same virtual machine must wait. To run JavaScript concurrently on multiple threads,
+  // > use a separate JSVirtualMachine instance for each thread.
+  //   https://developer.apple.com/documentation/javascriptcore/jsvirtualmachine
+  //
+  // In a complete design, we would probably want to wrap the JSValue and have it store a reference to this
+  // actor, with all calls await-ing for a spot on the actor's executor so we serialize things in Swift-land
+  // rather than internally within JavaScriptCore. Also, the JSValue API allows bridging native objects in to JS,
+  // but I suspect that relies quite heavily on Obj-C and probably won't work for pure-Swift objects.
+  //
+  // For now, we serialize script execution via this actor, but we just sort of allow JSValues to escape
+  // (again, they're thread-safe, although they may block this actor).
+  // This actor is basically being used like a Dispatch serial queue.
 
-  /// An object which parses URLs using the JSDOM reference implementation in an offscreen WKWebView.
+  private let context = JSContext()!
+
+  // --------------------------------------------
+  // Initializers.
+  // --------------------------------------------
+
+  /// Initializes a new JavaScriptEngine.
   ///
-  internal struct JSDOMRunner {
-    private let webview: WKWebView
-
-    private enum Error: Swift.Error {
-      case deserialisedToUnexpectedDataType
-    }
-
-    /// Creates a JSDOM runner. Call this if you are not in a @MainActor-isolated context.
-    ///
-    public static func createFromNonMainActor() async -> JSDOMRunner {
-      await MainActor.run { JSDOMRunner() }
-    }
-
-    // FIXME: This should be @MainActor, but we can't do that because it would prevent its use in view-model structs.
-    //        SwiftUI 2.0 doesn't support view-model structs being declared @MainActor.
-    //
-    //        Instead, we trust SwiftUI to create these things on the Main actor anyway,
-    //        and use 'createFromNonMainActor' from non-@MainActor-isolated functions.
-    public init() {
-      webview = WKWebView(frame: .zero, configuration: .init())
-
-      let liveViewerData = Bundle.main.resourceURL!.appendingPathComponent("live-viewer", isDirectory: true)
-      webview.loadFileURL(
-        liveViewerData.appendingPathComponent("index.html"),
-        allowingReadAccessTo: liveViewerData
-      )
-    }
-
-    /// Parses the given input string against the given base URL string.
-    /// If parsing fails, this function returns `nil`.
-    ///
-    /// Any internal errors encountered while evaluating the JavaScript are considered
-    /// non-recoverable and will result in a `fatalError`.
-    ///
-    public func parse(input: String, base: String?) async -> URLValues? {
-
-      // Hack: we need to make sure the webview has loaded before we proceed.
-      while await webview.isLoading {
-        try? await Task.sleep(nanoseconds: UInt64(0.3 * 1E9) /* 300ms */)
-      }
-
-      // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
-      // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
-      // which decodeURIComponent will use to restore the original content.
-      let escapedInput = Data(input.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
-      var js = #"var url = new whatwgURL.URL(decodeURIComponent(window.atob('\#(escapedInput)'))"#
-      if let base = base {
-        let escapedBase = Data(base.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
-        js += #", decodeURIComponent(window.atob('\#(escapedBase)')));"#
-      } else {
-        js += #");"#
-      }
-      js += #"""
-        var entries = new Map();
-        [ "href", "protocol", "username", "password", "host", "hostname", "origin", "port", "pathname", "search", "hash" ].forEach(function(property){
-          entries.set(property, url[property]);
-        });
-        JSON.stringify(Object.fromEntries(entries))
-        """#
-
-      // Since this is being invoked on a WKWebView, we need to call evaluteJavaScript from the Main actor.
-      // However, that function is itself async and runs on some background thread.
-      return try! await Task { @MainActor [js] in
-        guard let result = try? await webview.evaluateJavaScript(js) as? String else {
-          return nil
+  public init() {
+    context.evaluateScript(
+      #"""
+      function __swift_classifyError(err) {
+        if (err instanceof EvalError) {
+          return \#(Exception.ErrorKind.evalError.rawValue)
+        } else if (err instanceof RangeError) {
+          return \#(Exception.ErrorKind.rangeError.rawValue)
+        } else if (err instanceof ReferenceError) {
+          return \#(Exception.ErrorKind.referenceError.rawValue)
+        } else if (err instanceof SyntaxError) {
+          return \#(Exception.ErrorKind.syntaxError.rawValue)
+        } else if (err instanceof TypeError) {
+          return \#(Exception.ErrorKind.typeError.rawValue)
+        } else if (err instanceof URIError) {
+          return \#(Exception.ErrorKind.URIError.rawValue)
+        } else if (err instanceof AggregateError) {
+          return \#(Exception.ErrorKind.aggregateError.rawValue)
+        } else if (err instanceof InternalError) {
+          return \#(Exception.ErrorKind.internalError.rawValue)
+        } else {
+          return \#(Exception.ErrorKind.unknownOrCustomError.rawValue)
         }
-        let resultData = result.data(using: .utf8)!
-        guard let resultDict = try? JSONSerialization.jsonObject(with: resultData) as? [String: String] else {
-          fatalError("Failed to parse JSON response")
-        }
-        return URLValues(resultDict)
-      }.result.get()
-    }
+      }
+      """#
+    )
   }
 
-#else
-
-  import JavaScriptCore
-
-  internal actor JavaScriptEngine {
-
-    // The JavaScriptCore API is thread-safe—for example, you can create JSValue objects
-    // or evaluate scripts from any thread—however, all other threads attempting to use
-    // the same virtual machine must wait. To run JavaScript concurrently on multiple threads,
-    // use a separate JSVirtualMachine instance for each thread.
-    // https://developer.apple.com/documentation/javascriptcore/jsvirtualmachine
-
-    private let context = JSContext()!
-    private let typeErrorClass: JSValue
-
-    public struct TypeError: Error {
-      var exception: JSValue
-    }
-    public struct Exception: Error {
-      var exception: JSValue
-    }
-
-    private static func loadScript(script: String, context: JSContext) throws {
-      let _ = context.evaluateScript(script)
-      if let exception = context.exception { throw Exception(exception: exception) }
-    }
-
-    // Init.
-
-    public init() {
-      typeErrorClass = context.evaluateScript("TypeError")
-    }
-
-    public convenience init(initialScripts: [String]) throws {
-      self.init()
-      for script in initialScripts {
-        try JavaScriptEngine.loadScript(script: script, context: context)
-      }
-    }
-
-    // Raw context access.
-
-    public func withJSContext<T>(_ body: (JSContext) throws -> T) rethrows -> T {
-      try body(context)
-    }
-
-    // Evaluating scripts.
-
-    // JSValue is a bit of an odd fit because it allows calling functions and such;
-    // thankfully, that is thread-safe, although those functions may change global state and interfere
-    // with the result of scripts that execute via the actor.
-    // A full JS interop design is out-of-scope for this project, however.
-
-    public func evaluate(_ script: String) throws -> JSValue? {
-      let result = context.evaluateScript(script)
-      if result?.isUndefined == true, let exception = context.exception {
-        if exception.isInstance(of: typeErrorClass) {
-          throw TypeError(exception: exception)
-        }
-        throw Exception(exception: exception)
-      }
-      return result
-    }
-  }
-
-  /// An object which parses URLs using the JSDOM reference implementation in a JavaScriptCore context.
+  /// Initializes a new JavaScriptEngine, and prepares the environment by executing a collection of setup scripts.
   ///
-  internal struct JSDOMRunner {
-    private let engine: JavaScriptEngine
-
-    // Note: createFromNonMainActor() is only necessary for WKWebView. Implemented here so they have the same API.
-
-    /// Creates a JSDOM runner. Call this if you are not in a @MainActor-isolated context.
-    ///
-    public static func createFromNonMainActor() async -> JSDOMRunner {
-      JSDOMRunner()
-    }
-
-    private static func getPolyfillScript(name: String) throws -> String {
-      return try String(
-        contentsOf: Bundle.main.resourceURL!
-          .appendingPathComponent("polyfills", isDirectory: true)
-          .appendingPathComponent("\(name).js")
-      )
-    }
-
-    public init() {
-
-      let liveViewerLocation = Bundle.main.resourceURL!
-        .appendingPathComponent("live-viewer", isDirectory: true)
-        .appendingPathComponent("whatwg-url.js")
-      var liveViewerScript = try! String(contentsOf: liveViewerLocation)
-      // Hack from https://github.com/codesandbox/codesandbox-client/pull/4935/files
-      liveViewerScript = liveViewerScript.replacingOccurrences(
-        of: #"Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get"#,
-        with: #"false ? Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get : null;"#
-      )
-
-      self.engine = try! JavaScriptEngine(initialScripts: [
-        try! JSDOMRunner.getPolyfillScript(name: "base64"),
-        try! JSDOMRunner.getPolyfillScript(name: "TextEncoderDecoder"),
-        liveViewerScript
-      ])
-    }
-
-    /// Parses the given input string against the given base URL string.
-    /// If parsing fails, this function returns `nil`.
-    ///
-    /// Any internal errors encountered while evaluating the JavaScript are considered
-    /// non-recoverable and will result in a `fatalError`.
-    ///
-    public func parse(input: String, base: String?) async -> URLValues? {
-
-      // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
-      // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
-      // which decodeURIComponent will use to restore the original content.
-      let escapedInput = Data(input.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
-      var js = #"new whatwgURL.URL(decodeURIComponent(Base64.atob('\#(escapedInput)'))"#
-      if let base = base {
-        let escapedBase = Data(base.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
-        js += #", decodeURIComponent(Base64.atob('\#(escapedBase)'))"#
-      }
-      js += #");"#
-
-      do {
-        return try await engine.evaluate(js).map { URLValues($0) }
-      } catch _ as JavaScriptEngine.TypeError {
-        return nil
-      } catch {
-        fatalError("Unknown JS exception: \(error)")
-      }
+  public convenience init(initialScripts: [String]) throws {
+    self.init()
+    for script in initialScripts {
+      context.exception = nil
+      context.evaluateScript(script)
+      if let exception = context.exception { throw Exception(exception: exception, kind: .unknownOrCustomError) }
     }
   }
 
-#endif
+  // --------------------------------------------
+  // Exceptions.
+  // --------------------------------------------
+
+  public struct Exception: Error, CustomStringConvertible {
+    public var exception: JSValue
+    public var kind: ErrorKind
+
+    public enum ErrorKind: Int {
+      case unknownOrCustomError
+      case evalError
+      case rangeError
+      case referenceError
+      case syntaxError
+      case typeError
+      case URIError
+      case aggregateError
+      case internalError
+    }
+
+    public var description: String {
+      exception.toString()
+    }
+  }
+
+  private func throwException(_ exception: JSValue) throws {
+    guard
+      let __errorKind = context.globalObject.invokeMethod("__swift_classifyError", withArguments: [exception]),
+      let _errorKind = __errorKind.toNumber(),
+      let errorKind = Exception.ErrorKind(rawValue: _errorKind.intValue)
+    else {
+      fatalError("Unable to classify JS Exception: \(exception.toString() ?? "<unprintable>")")
+    }
+    throw Exception(exception: exception, kind: errorKind)
+  }
+
+  // --------------------------------------------
+  // Evaluating Scripts.
+  // --------------------------------------------
+
+  /// Evaluates the given script.
+  ///
+  /// If the script throws an unhandled JavaScript exception, this function throws a `JavaScriptEngine.Exception`.
+  ///
+  public func evaluate(_ script: String) throws -> JSValue? {
+    context.exception = nil
+    guard let result = context.evaluateScript(script) else {
+      return nil
+    }
+    if let exception = context.exception {
+      try throwException(exception)
+    }
+    guard !result.isUndefined else {
+      return nil  // Can we do anything better here? undefined is not the same as null.
+    }
+    guard !result.isNull else {
+      return nil
+    }
+    return result
+  }
+}
 
 
 // --------------------------------------------
-// MARK: - Batch Processing.
+// MARK: - JSDOM Runner.
 // --------------------------------------------
 
 
-extension JSDOMRunner {
+/// An object which parses URLs using the JSDOM reference implementation in a JavaScriptCore context.
+///
+internal struct JSDOMRunner {
+  private let engine: JavaScriptEngine
+
+  private static func getPolyfillScript(name: String) throws -> String {
+    return try String(
+      contentsOf: Bundle.main.resourceURL!
+        .appendingPathComponent("polyfills", isDirectory: true)
+        .appendingPathComponent("\(name).js")
+    )
+  }
+
+  public init() {
+
+    let liveViewerLocation = Bundle.main.resourceURL!
+      .appendingPathComponent("live-viewer", isDirectory: true)
+      .appendingPathComponent("whatwg-url.js")
+    var liveViewerScript = try! String(contentsOf: liveViewerLocation)
+    // Hack from https://github.com/codesandbox/codesandbox-client/pull/4935/files
+    liveViewerScript = liveViewerScript.replacingOccurrences(
+      of: #"Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get"#,
+      with: #"false ? Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get : null;"#
+    )
+
+    self.engine = try! JavaScriptEngine(initialScripts: [
+      try! JSDOMRunner.getPolyfillScript(name: "base64"),
+      try! JSDOMRunner.getPolyfillScript(name: "TextEncoderDecoder"),
+      liveViewerScript
+    ])
+  }
+
+  // --------------------------------------------
+  // URL Parsing.
+  // --------------------------------------------
+
+  /// Parses the given input string against the given base URL string.
+  /// If parsing fails, this function returns `nil`.
+  ///
+  /// Any internal errors encountered while evaluating the JavaScript are considered
+  /// non-recoverable and will result in a `fatalError`.
+  ///
+  public func parse(input: String, base: String?) async -> URLValues? {
+
+    // To escape the strings, first percent-encode to make everything ASCII and then base64-encode
+    // to reduce the character set. Javascript's 'atob' will restore the percent-encoded version,
+    // which decodeURIComponent will use to restore the original content.
+    let escapedInput = Data(input.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
+    var js = #"new whatwgURL.URL(decodeURIComponent(Base64.atob('\#(escapedInput)'))"#
+    if let base = base {
+      let escapedBase = Data(base.percentEncoded(using: .urlComponentSet).utf8).base64EncodedString()
+      js += #", decodeURIComponent(Base64.atob('\#(escapedBase)'))"#
+    }
+    js += #");"#
+
+    do {
+      return try await engine.evaluate(js).map { URLValues($0) }
+    } catch let err as JavaScriptEngine.Exception where err.kind == .typeError {
+      return nil
+    } catch {
+      fatalError("Unknown JS exception: \(error)")
+    }
+  }
+
+  // --------------------------------------------
+  // Batch Processing.
+  // --------------------------------------------
 
   /// Executes a series of tests on the JSDOM URL reference implementation.
   ///
@@ -254,7 +238,7 @@ extension JSDOMRunner {
     generateResult: (Int, TestInput, URLValues?) -> TestResult?
   ) async -> [TestResult] {
 
-    let runner = await JSDOMRunner.createFromNonMainActor()
+    let runner = JSDOMRunner()
     var results = [TestResult]()
     var number = 0
     for testInput in testInputs {
@@ -300,21 +284,6 @@ extension URLValues {
       pathname: jsValue.getString("pathname") ?? "",
       search: jsValue.getString("search") ?? "",
       hash: jsValue.getString("hash") ?? ""
-    )
-  }
-}
-
-extension URLValues {
-
-  fileprivate init(_ dict: [String: String]) {
-    self.init(
-      href: dict["href", default: ""], origin: dict["origin"],
-      protocol: dict["protocol", default: ""],
-      username: dict["username", default: ""], password: dict["password", default: ""],
-      host: dict["host", default: ""], hostname: dict["hostname", default: ""],
-      port: dict["port", default: ""],
-      pathname: dict["pathname", default: ""],
-      search: dict["search", default: ""], hash: dict["hash", default: ""]
     )
   }
 }
