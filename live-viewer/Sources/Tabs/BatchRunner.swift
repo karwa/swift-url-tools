@@ -37,7 +37,7 @@ struct BatchRunner: View {
 
     /// The currently-selected constructor test result.
     ///
-    var selectedItem: WPTConstructorTest.Result? = .none
+    var selectedItem: TestResult<WPTConstructorTest>? = .none
 
     /// A queue to run WebURL tests on.
     ///
@@ -46,7 +46,7 @@ struct BatchRunner: View {
     enum ResultsState {
       case parseError(Error)
       case running
-      case finished([WPTConstructorTest.Result])
+      case finished([TestResult<WPTConstructorTest>])
 
       var isRunning: Bool {
         if case .running = self {
@@ -159,7 +159,7 @@ extension BatchRunner {
   }
 
   #if os(macOS)
-    private func resultsList(mismatches: [WPTConstructorTest.Result]) -> some View {
+    private func resultsList(mismatches: [TestResult<WPTConstructorTest>]) -> some View {
       // On macOS, we don't have a global NavigationView (because SwiftUI just crashes, see 'App.swift'),
       // and a local NavigationView is horribly broken in all sorts of interesting ways.
       // Instead, use a HStack for a SplitView-esque presentation.
@@ -179,7 +179,7 @@ extension BatchRunner {
       }
     }
   #else
-    private func resultsList(mismatches: [WPTConstructorTest.Result]) -> some View {
+    private func resultsList(mismatches: [TestResult<WPTConstructorTest>]) -> some View {
       // On non-macOS platforms, we have a global NavigationView, so use a NavigationLink to show the details view.
       // We don't want a ScrollView-in-a-ScrollView, so use a LazyVStack rather than a List.
       // This means we don't have selection or keyboard navigation. C'est la vie.
@@ -205,13 +205,13 @@ extension BatchRunner {
     }
   #endif
 
-  private func resultRow(_ testResult: WPTConstructorTest.Result, chevron: Bool) -> some View {
+  private func resultRow(_ testResult: TestResult<WPTConstructorTest>, chevron: Bool) -> some View {
     HStack(alignment: .center) {
       VStack(alignment: .leading) {
-        Text("\(testResult.testcase.input)")
+        Text("\(testResult.testCase.input)")
           .lineLimit(1)
           .foregroundColor(.primary)
-        Text("\(testResult.testcase.base ?? "")")
+        Text("\(testResult.testCase.base ?? "")")
           .lineLimit(1)
           .foregroundColor(.secondary)
       }
@@ -266,32 +266,31 @@ extension BatchRunner {
       generateResult: {
         // Check to see if the result is a mismatch.
         // This doesn't perform the entire range of checks that a full WPTConstructorTest does.
-        (testNumber, testcase, actual) -> WPTConstructorTest.Result? in
+        (testNumber, testcase, actual) -> TestResult<WPTConstructorTest>? in
 
         guard case .testcase(let testcase) = testcase else {
           preconditionFailure("Should only see test cases here")
         }
         guard let referenceResult = actual else {
           guard testcase.failure else {
-            return WPTConstructorTest.Result(
-              testNumber: testNumber, testcase: testcase,
-              propertyValues: nil, failures: .unexpectedFailureToParse
-            )
+            var result = TestResult<WPTConstructorTest>(testNumber: testNumber, testCase: testcase)
+            result.failures = [.unexpectedFailureToParse]
+            return result
           }
           // Success. Correct failure to parse.
           return nil
         }
         guard let expectedResult = testcase.expectedValues else {
-          return WPTConstructorTest.Result(
-            testNumber: testNumber, testcase: testcase,
-            propertyValues: actual, failures: .unexpectedSuccessfulParse
-          )
+          var result = TestResult<WPTConstructorTest>(testNumber: testNumber, testCase: testcase)
+          result.captures = WPTConstructorTest.CapturedData(propertyValues: actual)
+          result.failures = [.unexpectedSuccessfulParse]
+          return result
         }
         guard URLValues.diff(expectedResult, referenceResult).isEmpty else {
-          return WPTConstructorTest.Result(
-            testNumber: testNumber, testcase: testcase,
-            propertyValues: actual, failures: .propertyMismatch
-          )
+          var result = TestResult<WPTConstructorTest>(testNumber: testNumber, testCase: testcase)
+          result.captures = WPTConstructorTest.CapturedData(propertyValues: actual)
+          result.failures = [.propertyMismatch]
+          return result
         }
         // Success. Parsed with correct result.
         return nil
@@ -305,12 +304,12 @@ extension BatchRunner {
     guard let fileContents = parseSourceFileOrSetError() else { return }
 
     struct MismatchCollector: WPTConstructorTest.Harness {
-      var mismatches: [WPTConstructorTest.Result] = []
+      var mismatches: [TestResult<WPTConstructorTest>] = []
 
       func parseURL(_ input: String, base: String?) -> URLValues? {
         return WebURL.JSModel(input, base: base)?.urlValues
       }
-      mutating func reportTestResult(_ result: WPTConstructorTest.Result) {
+      mutating func reportTestResult(_ result: TestResult<WPTConstructorTest>) {
         if !result.failures.isEmpty {
           mismatches.append(result)
         }
@@ -339,7 +338,7 @@ extension BatchRunner {
 /// Displays the test-case, the actual result, expected result, and a list of test failures.
 ///
 fileprivate struct MismatchInspector: View {
-  @Binding var testResult: WPTConstructorTest.Result
+  @Binding var testResult: TestResult<WPTConstructorTest>
   @State var selecteditemDiff: [URLModelProperty] = []
 
   var body: some View {
@@ -348,11 +347,11 @@ fileprivate struct MismatchInspector: View {
         VStack(alignment: .leading) {
           HStack {
             Text("Input").bold()
-            TextField("", text: .constant(testResult.testcase.input))
+            TextField("", text: .constant(testResult.testCase.input))
           }
           HStack {
             Text("Base").bold()
-            TextField("", text: .constant(testResult.testcase.base ?? ""))
+            TextField("", text: .constant(testResult.testCase.base ?? ""))
           }
         }
 
@@ -360,12 +359,12 @@ fileprivate struct MismatchInspector: View {
 
         URLForm(
           label: "Actual",
-          values: .constant(testResult.propertyValues),
+          values: .constant(testResult.captures?.propertyValues),
           flaggedKeys: $selecteditemDiff
         )
         URLForm(
           label: "Expected",
-          values: .constant(testResult.testcase.expectedValues),
+          values: .constant(testResult.testCase.expectedValues),
           flaggedKeys: $selecteditemDiff
         )
       }
@@ -379,15 +378,15 @@ fileprivate struct MismatchInspector: View {
     .onAppear { calculateDiff(testResult) }
   }
 
-  private func calculateDiff(_ newTestResult: WPTConstructorTest.Result) {
-    selecteditemDiff = URLValues.diff(newTestResult.propertyValues, newTestResult.testcase.expectedValues)
+  private func calculateDiff(_ newTestResult: TestResult<WPTConstructorTest>) {
+    selecteditemDiff = URLValues.diff(newTestResult.captures?.propertyValues, newTestResult.testCase.expectedValues)
   }
 }
 
 /// A horizontal, scrollable list of test failures from a URL constructor test result.
 ///
 fileprivate struct WPTConstructorTestFailureBadges: View {
-  @Binding var testResult: WPTConstructorTest.Result
+  @Binding var testResult: TestResult<WPTConstructorTest>
 
   var body: some View {
     ScrollView(.horizontal) {
