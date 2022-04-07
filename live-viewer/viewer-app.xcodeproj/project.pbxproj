@@ -13,6 +13,9 @@
 		CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53225C2D25A006ABAD2 /* URLForm.swift */; };
 		CB34A53625C2D2BD006ABAD2 /* FoundationURLValues.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */; };
 		CB34A53925C2E1D7006ABAD2 /* JSDOMRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */; };
+		CB4598A327A48EE60080A70A /* URLRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4598A227A48EE60080A70A /* URLRendering.swift */; };
+		CB4955CA27FB7243008731A2 /* AttributedStringView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4955C927FB7243008731A2 /* AttributedStringView.swift */; };
+		CB4955CC27FBCC41008731A2 /* WebURL+Rendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4955CB27FBCC41008731A2 /* WebURL+Rendering.swift */; };
 		CB4F2507278683D00051AFD9 /* Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4F2506278683D00051AFD9 /* Modifiers.swift */; };
 		CB4F25092786D6280051AFD9 /* DividedGroupBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4F25082786D6280051AFD9 /* DividedGroupBox.swift */; };
 		CB5734DC274BA19100968E04 /* WebURLFoundationExtras in Frameworks */ = {isa = PBXBuildFile; productRef = CB5734DB274BA19100968E04 /* WebURLFoundationExtras */; };
@@ -34,6 +37,9 @@
 		CB34A53225C2D25A006ABAD2 /* URLForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLForm.swift; sourceTree = "<group>"; };
 		CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationURLValues.swift; sourceTree = "<group>"; };
 		CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSDOMRunner.swift; sourceTree = "<group>"; };
+		CB4598A227A48EE60080A70A /* URLRendering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLRendering.swift; sourceTree = "<group>"; };
+		CB4955C927FB7243008731A2 /* AttributedStringView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttributedStringView.swift; sourceTree = "<group>"; };
+		CB4955CB27FBCC41008731A2 /* WebURL+Rendering.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "WebURL+Rendering.swift"; sourceTree = "<group>"; };
 		CB4F2506278683D00051AFD9 /* Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Modifiers.swift; sourceTree = "<group>"; };
 		CB4F25082786D6280051AFD9 /* DividedGroupBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DividedGroupBox.swift; sourceTree = "<group>"; };
 		CB778F5224954F7E00D9103E /* live-url-viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "live-url-viewer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,6 +76,7 @@
 				CB310FEB25D65FE300D1B6B9 /* Badge.swift */,
 				CB4F2506278683D00051AFD9 /* Modifiers.swift */,
 				CB4F25082786D6280051AFD9 /* DividedGroupBox.swift */,
+				CB4955C927FB7243008731A2 /* AttributedStringView.swift */,
 			);
 			path = "Utility Views";
 			sourceTree = "<group>";
@@ -77,6 +84,7 @@
 		CB4F2505278671F10051AFD9 /* Model Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				CB4955CB27FBCC41008731A2 /* WebURL+Rendering.swift */,
 				CB34A53825C2E1D7006ABAD2 /* JSDOMRunner.swift */,
 				CB34A53525C2D2BD006ABAD2 /* FoundationURLValues.swift */,
 				CBBC3FE926D8E897009E0E86 /* Clipboard.swift */,
@@ -115,6 +123,7 @@
 				CB778F5724954F7E00D9103E /* LiveViewer.swift */,
 				CBEF0207265018D200824548 /* FilePathViewer.swift */,
 				CB9C387925CD03F900E69BA1 /* BatchRunner.swift */,
+				CB4598A227A48EE60080A70A /* URLRendering.swift */,
 			);
 			path = Tabs;
 			sourceTree = "<group>";
@@ -231,9 +240,12 @@
 				CBBC3FEA26D8E897009E0E86 /* Clipboard.swift in Sources */,
 				CB87479B25CFAAE1004F2347 /* MainView.swift in Sources */,
 				CB778F5624954F7E00D9103E /* App.swift in Sources */,
+				CB4598A327A48EE60080A70A /* URLRendering.swift in Sources */,
 				CB34A53925C2E1D7006ABAD2 /* JSDOMRunner.swift in Sources */,
 				CB9C387A25CD03F900E69BA1 /* BatchRunner.swift in Sources */,
+				CB4955CC27FBCC41008731A2 /* WebURL+Rendering.swift in Sources */,
 				CB34A53625C2D2BD006ABAD2 /* FoundationURLValues.swift in Sources */,
+				CB4955CA27FB7243008731A2 /* AttributedStringView.swift in Sources */,
 				CBEF0208265018D200824548 /* FilePathViewer.swift in Sources */,
 				CB4F25092786D6280051AFD9 /* DividedGroupBox.swift in Sources */,
 				CB34A53325C2D25A006ABAD2 /* URLForm.swift in Sources */,

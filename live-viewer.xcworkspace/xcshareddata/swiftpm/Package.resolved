@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/apple/swift-argument-parser",
         "state": {
           "branch": null,
-          "revision": "9564d61b08a5335ae0a36f789a7d71493eacadfc",
-          "version": "0.3.2"
+          "revision": "6b2aa2748a7881eebb9f84fb10c01293e15b52ca",
+          "version": "0.5.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/google/swift-benchmark",
         "state": {
           "branch": null,
-          "revision": "8e0ef8bb7482ab97dcd2cd1d6855bd38921c345d",
-          "version": "0.1.0"
+          "revision": "a0564bf88df5f94eec81348a2f089494c6b28d80",
+          "version": "0.1.1"
         }
       },
       {
@@ -35,6 +35,15 @@
           "branch": null,
           "revision": "ce8b4910730114fa1eb46967a031a04f7594f42d",
           "version": "1.0.0"
+        }
+      },
+      {
+        "package": "Swifter",
+        "repositoryURL": "https://github.com/httpswift/swifter.git",
+        "state": {
+          "branch": null,
+          "revision": "9483a5d459b45c3ffd059f7b55f9638e268632fd",
+          "version": "1.5.0"
         }
       }
     ]

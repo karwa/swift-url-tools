@@ -20,6 +20,7 @@ struct MainView: View {
     case liveViewer
     case filePathViewer
     case batchProcessor
+    case rendering
   }
   @State var selectedTab = Tabs.liveViewer
 
@@ -30,14 +31,16 @@ struct MainView: View {
   @State var liveViewerData = LiveViewer.ModelData()
   @State var filePathData = FilePathViewer.ModelData()
   @State var batchRunnerData = BatchRunner.ModelData()
+  @State var renderingData = URLRendering.ModelData()
 
   var body: some View {
-    ScrollView {
+    ScrollView(.vertical) {
       Group {
         switch selectedTab {
         case .liveViewer: LiveViewer(modelData: $liveViewerData)
         case .filePathViewer: FilePathViewer(modelData: $filePathData)
         case .batchProcessor: BatchRunner(modelData: $batchRunnerData)
+        case .rendering: URLRendering(modelData: $renderingData)
         }
       }.padding(16)
 
@@ -56,6 +59,7 @@ struct MainView: View {
           Text("Live").tag(Tabs.liveViewer)
           Text("File Paths").tag(Tabs.filePathViewer)
           Text("Batch").tag(Tabs.batchProcessor)
+          Text("Render").tag(Tabs.rendering)
         }.pickerStyle(.segmented)
       }
     }
