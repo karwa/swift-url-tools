@@ -173,17 +173,11 @@ internal struct JSDOMRunner {
     let liveViewerLocation = Bundle.main.resourceURL!
       .appendingPathComponent("live-viewer", isDirectory: true)
       .appendingPathComponent("whatwg-url.js")
-    var liveViewerScript = try! String(contentsOf: liveViewerLocation)
-    // Hack from https://github.com/codesandbox/codesandbox-client/pull/4935/files
-    liveViewerScript = liveViewerScript.replacingOccurrences(
-      of: #"Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get"#,
-      with: #"false ? Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, "byteLength").get : null;"#
-    )
 
     self.engine = try! JavaScriptEngine(initialScripts: [
       try! JSDOMRunner.getPolyfillScript(name: "base64"),
       try! JSDOMRunner.getPolyfillScript(name: "TextEncoderDecoder"),
-      liveViewerScript
+      try! String(contentsOf: liveViewerLocation)
     ])
   }
 
