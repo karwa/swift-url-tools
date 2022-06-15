@@ -25,6 +25,8 @@ struct LiveViewer: View {
     var weburlResult = AnnotatedURLValues()
     var referenceResult = AnnotatedURLValues()
 
+    var showDecodedIDN = true
+
     var runnerOperationID = 0
     var jsRunner = JSDOMRunner()
   }
@@ -47,6 +49,7 @@ extension LiveViewer {
         .frame(height: 50, alignment: .center)
         .contextMenu {
           Button("Copy to clipboard") { copyToClipboard(generateClipboardString()) }
+          Toggle("Show decoded IDN", isOn: $modelData.showDecodedIDN)
         }
       // Input field.
       DividedGroupBox(
@@ -56,7 +59,7 @@ extension LiveViewer {
       .textFieldStyle(PlainTextFieldStyle())
       .disableAutocorrectAndCapitalization()
       // Results.
-      URLForm(label: "WebURL (JS model)", values: $modelData.weburlResult)
+      URLForm(label: "WebURL (JS model)", values: $modelData.weburlResult, showDecodedIDN: $modelData.showDecodedIDN)
       URLForm(label: "Reference result", values: $modelData.referenceResult)
     }
     .onChange(of: modelData.urlString)  { updateResults($0, modelData.baseString) }
