@@ -115,6 +115,20 @@ public protocol _WebURL_NSAttributedStringStyle {
   //    number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
   //  ) -> (key: [NSAttributedString.Key: Any]?, value: [NSAttributedString.Key: Any]?)
 
+  //  /// Attributes to apply to the given query parameter.
+  //  ///
+  //  /// This is a more detailed version of `queryParamsAttributes`, which allows styling the key-value pair's
+  //  /// internal and external delimiters as well as its content.
+  //  ///
+  //  func _queryParamsAttributes(
+  //    number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
+  //  ) -> (
+  //    key: [NSAttributedString.Key: Any]?,
+  //    delimiter: [NSAttributedString.Key: Any]?,
+  //    value: [NSAttributedString.Key: Any]?,
+  //    pairDelimiter: [NSAttributedString.Key: Any]?
+  //  )
+
   /// Attributes to apply to the URL's fragment.
   ///
   /// - parameters:
@@ -162,6 +176,17 @@ extension WebURL.NSAttributedStringStyle {
   //    number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
   //  ) -> (key: [NSAttributedString.Key: Any]?, value: [NSAttributedString.Key: Any]?) {
   //    (nil, nil)
+  //  }
+  //  func _queryParamsAttributes(
+  //    number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
+  //  ) -> (
+  //    key: [NSAttributedString.Key: Any]?,
+  //    delimiter: [NSAttributedString.Key: Any]?,
+  //    value: [NSAttributedString.Key: Any]?,
+  //    pairDelimiter: [NSAttributedString.Key: Any]?
+  //  ) {
+  //    let nonUnderscoredResult = queryParamsAttributes(number: i, of: total, index: index, url: url)
+  //    return (nonUnderscoredResult.key, nil, nonUnderscoredResult.value, nil)
   //  }
   public func fragmentAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
     nil

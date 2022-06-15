@@ -41,7 +41,6 @@ struct URLRendering: View {
 
 extension URLRendering {
 
-
   var body: some View {
     VStack(spacing: 10) {
       DividedGroupBox(
@@ -53,7 +52,7 @@ extension URLRendering {
 
       NSAttributedStringView(attributedString: $modelData.renderedString)
     }
-    .onChange(of: modelData.urlString)  { updateResults($0, style: modelData.selectedStyle) }
+    .onChange(of: modelData.urlString) { updateResults($0, style: modelData.selectedStyle) }
     .onChange(of: modelData.selectedStyle) { updateResults(modelData.urlString, style: $0) }
     .onChange(of: systemColorScheme) { _ in updateResults(modelData.urlString, style: modelData.selectedStyle) }
   }
@@ -62,7 +61,7 @@ extension URLRendering {
     HStack {
       Spacer()
       Picker("Style", selection: $modelData.selectedStyle) {
-          ForEach(Style.allCases) { Text(String(describing: $0)).tag($0) }
+        ForEach(Style.allCases) { Text(String(describing: $0)).tag($0) }
       }.pickerStyle(SegmentedPickerStyle()).frame(maxWidth: CGFloat(Style.allCases.count) * 100)
       Spacer()
     }
@@ -78,14 +77,15 @@ extension URLRendering {
 extension URLRendering {
 
   fileprivate func updateResults(_ input: String, style: Style) {
-    modelData.renderedString = WebURL(input).map {
-      switch style {
-      case .mono:
-        return Style.Mono().render($0)
-      case .colorful:
-        return Style.Colorful().render($0)
-      }
-    } ?? NSAttributedString(string: "")
+    modelData.renderedString =
+      WebURL(input).map {
+        switch style {
+        case .mono:
+          return Style.Mono().render($0)
+        case .colorful:
+          return Style.Colorful().render($0)
+        }
+      } ?? NSAttributedString(string: "")
   }
 }
 
@@ -113,7 +113,7 @@ extension URLRendering {
 
     func blended(withFraction fraction: CGFloat, of other: UIColor) -> UIColor? {
       var (r, g, b, a) = (0 as CGFloat, 0 as CGFloat, 0 as CGFloat, 0 as CGFloat)
-      var (other_r, other_g, other_b, other_a) = (0 as CGFloat, 0 as CGFloat, 0 as CGFloat, 0 as CGFloat)
+      var (other_r, other_g, other_b, other_a) = (r, g, b, a)
       guard
         self.getRed(&r, green: &g, blue: &b, alpha: &a),
         other.getRed(&other_r, green: &other_g, blue: &other_b, alpha: &other_a)
@@ -129,7 +129,6 @@ extension URLRendering {
 
 #endif
 
-
 extension URLRendering.Style {
 
   struct Mono: WebURL.NSAttributedStringStyle {
@@ -139,11 +138,11 @@ extension URLRendering.Style {
 
     enum Scale {
       // Scheme, UserInfo are all base font size.
-      static var hostOrOpaquePath: CGFloat      { 1.30 }
+      static var hostOrOpaquePath: CGFloat { 1.30 }
       // Port is base font size.
-      static var pathComponentMinimum: CGFloat  { 1.10 } // First component is 10% larger than base text, smaller than host.
-      static var pathComponentIncrease: CGFloat { 0.75 } // Path goes up by 75% of base text along its length, for a total of 1.85x.
-      static var pathComponentLast: CGFloat     { 0.25 } // Final component gets an additional 25% boost, for 2.1x base text.
+      static var pathComponentMinimum: CGFloat { 1.10 }  // First component is 10% larger than base text, smaller than host.
+      static var pathComponentIncrease: CGFloat { 0.75 }  // Path goes up by 75% of base text along its length, for a total of 1.85x.
+      static var pathComponentLast: CGFloat { 0.25 }  // Final component gets an additional 25% boost, for 2.1x base text.
       static var queryParmDelimiters: CGFloat { 1.25 }
       // Fragment is base font size.
     }
@@ -156,14 +155,14 @@ extension URLRendering.Style {
       }
     }
 
-    func baseAttributes(_ url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func baseAttributes(_ url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: textColor.withAlphaComponent(0.35),
-        .font: regularFont.withSize(fontSize)
+        .font: regularFont.withSize(fontSize),
       ]
     }
 
-    func hostnameAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func hostnameAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: textColor,
         .font: regularFont.withSize(fontSize * Scale.hostOrOpaquePath),
@@ -172,17 +171,17 @@ extension URLRendering.Style {
       ]
     }
 
-    func pathAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func pathAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       guard url.hasOpaquePath else { return nil }
       return [
         .foregroundColor: textColor.withAlphaComponent(0.7),
-        .font: regularFont.withSize(fontSize * Scale.hostOrOpaquePath)
+        .font: regularFont.withSize(fontSize * Scale.hostOrOpaquePath),
       ]
     }
 
     func pathComponentAttributes(
       number i: Int, of total: Int, index: WebURL.PathComponents.Index, url: WebURL
-    ) -> [NSAttributedString.Key : Any]? {
+    ) -> [NSAttributedString.Key: Any]? {
 
       // If there is a trailing "/", allow the prior component to be styled as last component.
       var adjustedTotal = total
@@ -191,35 +190,45 @@ extension URLRendering.Style {
       }
 
       let isLast = (i + 1 == adjustedTotal)
-      let fraction = Double(i + 1)/Double(adjustedTotal)
+      let fraction = Double(i + 1) / Double(adjustedTotal)
       let opacity = 0.40 + (fraction * fraction * 0.35) + (isLast ? 0.1 : 0)
-      let size    = (fontSize * Scale.pathComponentMinimum)
-                      + (fraction * fraction * (fontSize * Scale.pathComponentIncrease))
-                      + (isLast ? fontSize * Scale.pathComponentLast : 0)
+      let size =
+        (fontSize * Scale.pathComponentMinimum)
+        + (fraction * fraction * (fontSize * Scale.pathComponentIncrease))
+        + (isLast ? fontSize * Scale.pathComponentLast : 0)
       return [
         .foregroundColor: textColor.withAlphaComponent(opacity),
-        .font: regularFont.withSize(size)
+        .font: regularFont.withSize(size),
       ]
     }
 
-    func queryAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func queryAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: textColor.withAlphaComponent(0.20),
         .font: regularFont.withSize(fontSize * Scale.queryParmDelimiters),
       ]
     }
 
-//    func queryParamsAttributes(
-//      number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
-//    ) -> (key: [NSAttributedString.Key : Any]?, value: [NSAttributedString.Key : Any]?) {
-//      (key: [
-//        .foregroundColor: textColor.withAlphaComponent(0.70),
-//        .font: regularFont.withSize(fontSize),
-//      ], value: [
-//        .foregroundColor: textColor.withAlphaComponent(0.50),
-//        .font: regularFont.withSize(fontSize)
-//      ])
-//    }
+    //    func _queryParamsAttributes(
+    //      number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
+    //    ) -> (
+    //      key: [NSAttributedString.Key : Any]?,
+    //      delimiter: [NSAttributedString.Key : Any]?,
+    //      value: [NSAttributedString.Key : Any]?,
+    //      pairDelimiter: [NSAttributedString.Key : Any]?
+    //    ) {
+    //      (key: [
+    //        .foregroundColor: textColor.withAlphaComponent(0.70),
+    //        .font: regularFont.withSize(fontSize),
+    //      ], delimiter: [
+    //        .foregroundColor: textColor.withAlphaComponent(0.20),
+    //        .font: regularFont.withSize(fontSize * 0.8),
+    //       ], value: [
+    //        .foregroundColor: textColor.withAlphaComponent(0.50),
+    //        .font: regularFont.withSize(fontSize)
+    //       ], pairDelimiter: nil
+    //      )
+    //    }
   }
 }
 
@@ -235,35 +244,35 @@ extension URLRendering.Style {
 
     enum Scale {
       // Scheme, UserInfo are all base font size.
-      static var hostOrOpaquePath: CGFloat      { 1.30 }
-      static var port: CGFloat                  { 0.80 }
-      static var pathComponentMinimum: CGFloat  { 1.10 } // First component is 10% larger than base text, smaller than host.
-      static var pathComponentIncrease: CGFloat { 0.75 } // Path goes up by 75% of base text along its length, for a total of 1.85x.
-      static var pathComponentLast: CGFloat     { 0.25 } // Final component gets an additional 25% boost, for 2.1x base text.
+      static var hostOrOpaquePath: CGFloat { 1.30 }
+      static var port: CGFloat { 0.80 }
+      static var pathComponentMinimum: CGFloat { 1.10 }  // First component is 10% larger than base text, smaller than host.
+      static var pathComponentIncrease: CGFloat { 0.75 }  // Path goes up by 75% of base text along its length, for a total of 1.85x.
+      static var pathComponentLast: CGFloat { 0.25 }  // Final component gets an additional 25% boost, for 2.1x base text.
       // Query, Fragment are all base font size.
     }
 
-    func baseAttributes(_ url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func baseAttributes(_ url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: textColor,
-        .font: regularFont.withSize(fontSize)
+        .font: regularFont.withSize(fontSize),
       ]
     }
 
-    func schemeAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func schemeAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: url.scheme == "https" ? NSColor.systemGreen : NSColor.systemOrange
       ]
     }
 
-    func usernameAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func usernameAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: NSColor.systemRed.withAlphaComponent(0.7),
         .strikethroughStyle: NSNumber(value: NSUnderlineStyle.thick.rawValue),
       ]
     }
 
-    func passwordAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func passwordAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: NSColor.clear,
         .strokeColor: textColor.withAlphaComponent(0.7),
@@ -273,14 +282,14 @@ extension URLRendering.Style {
       ]
     }
 
-    func hostnameAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func hostnameAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       var isIP = false
       if case .ipv4Address = url._spis._utf8_host { isIP = true }
       if case .ipv6Address = url._spis._utf8_host { isIP = true }
       if isIP {
         return [
           .foregroundColor: NSColor.systemTeal,
-          .font: monoFont.withSize(fontSize * Scale.hostOrOpaquePath)
+          .font: monoFont.withSize(fontSize * Scale.hostOrOpaquePath),
         ]
       }
       return [
@@ -291,18 +300,18 @@ extension URLRendering.Style {
       ]
     }
 
-    func portAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func portAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: NSColor.systemIndigo,
         .font: monoFont.withSize(fontSize * Scale.port),
       ]
     }
 
-    func pathAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func pathAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       if url.hasOpaquePath {
         return [
           .foregroundColor: NSColor.systemPurple,
-          .font: regularFont.withSize(fontSize * Scale.hostOrOpaquePath)
+          .font: regularFont.withSize(fontSize * Scale.hostOrOpaquePath),
         ]
       }
       return [
@@ -312,7 +321,7 @@ extension URLRendering.Style {
 
     func pathComponentAttributes(
       number i: Int, of total: Int, index: WebURL.PathComponents.Index, url: WebURL
-    ) -> [NSAttributedString.Key : Any]? {
+    ) -> [NSAttributedString.Key: Any]? {
 
       // If there is a trailing "/", allow the prior component to be formatted as last component.
       var adjustedTotal = total
@@ -321,36 +330,53 @@ extension URLRendering.Style {
       }
 
       let isLast = (i + 1 == adjustedTotal)
-      let fraction = Double(i + 1)/Double(adjustedTotal)
+      let fraction = Double(i + 1) / Double(adjustedTotal)
       let color = NSColor.systemGray.blended(withFraction: fraction, of: .systemPink)!
-      let size    = (fontSize * Scale.pathComponentMinimum)
-                    + (fraction * fraction * (fontSize * Scale.pathComponentIncrease))
-                    + (isLast ? fontSize * Scale.pathComponentLast : 0)
+      let size =
+        (fontSize * Scale.pathComponentMinimum)
+        + (fraction * fraction * (fontSize * Scale.pathComponentIncrease))
+        + (isLast ? fontSize * Scale.pathComponentLast : 0)
       return [
         .foregroundColor: color,
-        .font: regularFont.withSize(size)
+        .font: regularFont.withSize(size),
       ]
     }
 
-    func queryAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func queryAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: NSColor.systemYellow
       ]
     }
 
-//    func queryParamsAttributes(
-//      number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
-//    ) -> (
-//      key: [NSAttributedString.Key : Any]?, value: [NSAttributedString.Key : Any]?
-//    ) {
-//      return (key: [
-//        .foregroundColor: NSColor.systemOrange
-//      ], value: [
-//        .foregroundColor: NSColor.systemBrown
-//      ])
-//    }
+    //    func _queryParamsAttributes(
+    //      number i: Int, of total: Int, index: LazilySplitQueryParameters<WebURL.UTF8View.SubSequence>.Index, url: WebURL
+    //    ) -> (
+    //      key: [NSAttributedString.Key : Any]?,
+    //      delimiter: [NSAttributedString.Key : Any]?,
+    //      value: [NSAttributedString.Key : Any]?,
+    //      pairDelimiter: [NSAttributedString.Key : Any]?
+    //    ) {
+    //      let c = NSColor(deviceRed: .random(in: 0...1), green: .random(in: 0...1), blue: .random(in: 0...1), alpha: 1)
+    //      return (key: [
+    //        .foregroundColor: c
+    //      ], delimiter: [
+    //        .underlineStyle: NSNumber(value: NSUnderlineStyle.thick.rawValue),
+    //        .underlineColor: c
+    //      ], value: [
+    //        .foregroundColor: c
+    //      ], pairDelimiter: [
+    //        .underlineStyle: NSNumber(value: NSUnderlineStyle.double.rawValue),
+    //        .underlineColor: c
+    //      ])
+    //
+    //      return (key: [
+    //        .foregroundColor: NSColor.systemOrange
+    //      ], value: [
+    //        .foregroundColor: NSColor.systemBrown
+    //      ])
+    //    }
 
-    func fragmentAttributes(url: WebURL) -> [NSAttributedString.Key : Any]? {
+    func fragmentAttributes(url: WebURL) -> [NSAttributedString.Key: Any]? {
       [
         .foregroundColor: NSColor.systemRed
       ]

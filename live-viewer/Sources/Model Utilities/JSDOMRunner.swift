@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import WebURLTestSupport
 import JavaScriptCore
+import WebURLTestSupport
 
 /// An actor providing serialized, async access to a JavaScript engine.
 ///
@@ -149,11 +149,9 @@ internal actor JavaScriptEngine {
   }
 }
 
-
 // --------------------------------------------
 // MARK: - JSDOM Runner.
 // --------------------------------------------
-
 
 /// An object which parses URLs using the JSDOM reference implementation in a JavaScriptCore context.
 ///
@@ -177,7 +175,7 @@ internal struct JSDOMRunner {
     self.engine = try! JavaScriptEngine(initialScripts: [
       try! JSDOMRunner.getPolyfillScript(name: "base64"),
       try! JSDOMRunner.getPolyfillScript(name: "TextEncoderDecoder"),
-      try! String(contentsOf: liveViewerLocation)
+      try! String(contentsOf: liveViewerLocation),
     ])
   }
 
@@ -247,11 +245,12 @@ internal struct JSDOMRunner {
   }
 }
 
-
 // --------------------------------------------
 // MARK: - Utilities.
 // --------------------------------------------
 
+extension JSContext: @unchecked Sendable {}
+extension JSValue: @unchecked Sendable {}
 
 extension JSValue {
 
