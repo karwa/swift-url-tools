@@ -174,7 +174,8 @@ internal struct JSDOMRunner {
 
     self.engine = try! JavaScriptEngine(initialScripts: [
       try! JSDOMRunner.getPolyfillScript(name: "base64"),
-      try! JSDOMRunner.getPolyfillScript(name: "TextEncoderDecoder"),
+      try! JSDOMRunner.getPolyfillScript(name: "encoding-indexes"),
+      try! JSDOMRunner.getPolyfillScript(name: "encoding"),
       try! String(contentsOf: liveViewerLocation),
     ])
   }
