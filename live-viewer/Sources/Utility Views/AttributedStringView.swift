@@ -74,13 +74,19 @@ struct NSAttributedStringView: View {
       /// This subclass ensures the bridge still re-measures the label's size.
       ///
       private class ResizeReportingUILabel: UILabel {
-        var lastMeasuredSize: CGSize = .zero
-        var callback: Optional<@MainActor (UILabel) -> Void> = .none
+        var lastSuperviewSize: CGSize? = .none
+        var onSuperviewSizeChanged: Optional<@MainActor (UILabel) -> Void> = .none
+
+        override func didMoveToWindow() {
+          super.didMoveToWindow()
+          lastSuperviewSize = nil
+          Task { @MainActor in onSuperviewSizeChanged?(self) }
+        }
 
         override func layoutSubviews() {
-          if frame.size != lastMeasuredSize {
-            lastMeasuredSize = frame.size
-            callback?(self)
+          if superview?.frame.size != lastSuperviewSize {
+            lastSuperviewSize = superview?.frame.size
+            onSuperviewSizeChanged?(self)
           }
           super.layoutSubviews()
         }
@@ -88,26 +94,34 @@ struct NSAttributedStringView: View {
 
       func makeUIView(context: Context) -> UILabel {
         let label = ResizeReportingUILabel()
-        label.callback = { label in
-          let widthToFit = label.superview?.frame.width ?? label.frame.width
-          let size = label.sizeThatFits(CGSize(width: widthToFit, height: CGFloat.infinity))
-          measuredSize = size
-        }
         label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         label.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        label.setContentHuggingPriority(.defaultLow - 1, for: .vertical)
         label.backgroundColor = .clear
         // allow .attributedText to be set by the first update.
+
+        label.onSuperviewSizeChanged = { label in
+          // Available size changed. Re-measure the label.
+          let widthToFit = label.superview?.frame.width ?? label.frame.width
+          let size = label.sizeThatFits(CGSize(width: widthToFit, height: CGFloat.infinity))
+          measuredSize = size
+        }
         return label
       }
 
       func updateUIView(_ label: UILabel, context: Context) {
         guard label.attributedText != attributedString else { return }
         label.attributedText = attributedString
+
+        // Don't trigger a deferred update if we're not attached to a window;
+        // the size we measure isn't going to be meaningful, and we'll clobber the initial update.
+        guard label.window != nil else { return }
+
+        // We can't update SwiftUI state here, so defer the update.
         let widthToFit = label.superview?.frame.width ?? label.frame.width
         let size = label.sizeThatFits(CGSize(width: widthToFit, height: CGFloat.infinity))
-        // We're already on the main actor; we're just deferring the update.
         Task { @MainActor in measuredSize = size }
       }
     }

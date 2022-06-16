@@ -14,7 +14,6 @@
 
 import SwiftUI
 import WebURL
-import WebURLFoundationExtras
 
 struct URLRendering: View {
   @Binding var modelData: ModelData
