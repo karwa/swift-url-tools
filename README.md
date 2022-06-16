@@ -16,7 +16,7 @@ Also, it has a funky render mode, which demonstrates using WebURL's UTF8View to 
 
 <img src="example6.png" height="50%" width="50%">
 
-The app contains a local copy of the JSDom live URL viewer website (in `live-viewer/Resources/live-viewer/`), which is loaded in to a WKWebView. Unfortunately, I haven't had any success getting it to work in a view-less JavascriptCore context, but in theory that might work one day.
+The app contains a local copy of the JSDom live URL viewer website (in `live-viewer/Resources/live-viewer/`).
 
 ## Getting Started
 
