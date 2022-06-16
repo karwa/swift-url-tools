@@ -48,6 +48,7 @@ extension URLRendering {
       )
       .textFieldStyle(PlainTextFieldStyle())
       .disableAutocorrectAndCapitalization()
+      .urlKeyboardType()
 
       NSAttributedStringView(attributedString: $modelData.renderedString)
     }

@@ -97,6 +97,7 @@ extension FilePathViewer {
             .padding(.vertical, 2)
             .textFieldStyle(PlainTextFieldStyle())
             .disableAutocorrectAndCapitalization()
+            .urlKeyboardType()  // Even though this is a file path, the URL keyboard is a bit nicer.
         },
         bottom: {
           if let error = modelData.urlFromFilePathError {
@@ -116,6 +117,7 @@ extension FilePathViewer {
           .padding(.horizontal, 6).padding(.vertical, 3)
           .textFieldStyle(PlainTextFieldStyle())
           .disableAutocorrectAndCapitalization()
+          .urlKeyboardType()
       }
     }
   }

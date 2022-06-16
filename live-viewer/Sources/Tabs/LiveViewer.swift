@@ -58,6 +58,7 @@ extension LiveViewer {
       )
       .textFieldStyle(PlainTextFieldStyle())
       .disableAutocorrectAndCapitalization()
+      .urlKeyboardType()
       // Results.
       URLForm(label: "WebURL (JS model)", values: $modelData.weburlResult, showDecodedIDN: $modelData.showDecodedIDN)
       URLForm(label: "Reference result", values: $modelData.referenceResult)

@@ -25,6 +25,19 @@ extension View {
         .autocapitalization(.none)
       #endif
   }
+
+  /// Use the software keyboard optimized for entering URLs.
+  ///
+  /// This disables some of the 'smart' features, such as smart dashes (e.g. 2x'-' -> em-dash),
+  /// and makes certain characters such as the forward-slash easier to find.
+  ///
+  func urlKeyboardType() -> some View {
+    #if os(macOS)
+      return self
+    #else
+      return self.keyboardType(.URL)
+    #endif
+  }
 }
 
 extension View {
